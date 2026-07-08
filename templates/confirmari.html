@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Confirmări — Botezul lui {{nume}}</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦁</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600&family=Caveat:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sand: #f8f3e8; --sand-2: #efe8d6; --card: #fffcf4; --line: #e3d4b6;
+    --ink: #4a3c2e; --ink-2: #5a4a3a; --muted: #8a7a66; --accent: #8b7355;
+    --green: #6f7d43; --green-dark: #5c6836; --red: #b05a3f;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Lora', Georgia, serif;
+    color: var(--ink-2);
+    background:
+      radial-gradient(700px 500px at 12% 8%, rgba(125, 143, 111, .20), transparent 70%),
+      radial-gradient(600px 450px at 92% 28%, rgba(196, 169, 125, .18), transparent 70%),
+      linear-gradient(180deg, var(--sand) 0%, var(--sand-2) 100%);
+    min-height: 100vh;
+  }
+  .page { max-width: 760px; margin: 0 auto; padding: 28px 16px 48px; }
+  .card {
+    background: rgba(255, 252, 244, .95);
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    box-shadow: 0 18px 50px -22px rgba(90,70,40,.35);
+    padding: 26px 20px;
+  }
+  h1 { font-family: 'Caveat', cursive; font-size: 38px; color: var(--ink); text-align: center; }
+  .sub { text-align: center; font-size: 12px; color: var(--muted); letter-spacing: .2em; text-transform: uppercase; margin: 2px 0 22px; }
+
+  #login { max-width: 340px; margin: 0 auto; }
+  input[type="password"], .search {
+    width: 100%; font-family: inherit; font-size: 16px; color: var(--ink);
+    background: #fffdf7; border: 1.5px solid var(--line); border-radius: 12px;
+    padding: 12px 14px; outline: none;
+  }
+  input:focus, .search:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(111,125,67,.18); }
+  .btn {
+    width: 100%; font-family: inherit; font-size: 16px; font-weight: 600; color: #fff;
+    background: linear-gradient(180deg, var(--green), var(--green-dark));
+    border: 0; border-radius: 12px; padding: 13px; cursor: pointer; margin-top: 12px;
+  }
+  .err { display: none; color: #8c4a2f; background: #fbeae4; border: 1px solid #e5b8a5; border-radius: 10px; padding: 10px 12px; font-size: 14px; margin-bottom: 12px; }
+  .err.show { display: block; }
+
+  .stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 18px; }
+  @media (min-width: 560px) { .stats { grid-template-columns: repeat(4, 1fr); } }
+  .stat {
+    border: 1px solid var(--line); border-radius: 16px; padding: 14px 8px 12px;
+    text-align: center; background: linear-gradient(180deg, #faf4e6, #f2ead5);
+  }
+  .stat .ico { font-size: 22px; }
+  .stat b { display: block; font-size: 26px; color: var(--ink); line-height: 1.2; }
+  .stat small { font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; align-items: center; }
+  .toolbar .search { flex: 1 1 160px; width: auto; padding: 9px 13px; font-size: 14px; border-radius: 999px; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip {
+    font-family: inherit; font-size: 13.5px; color: var(--ink-2);
+    background: #fffdf7; border: 1.5px solid var(--line); border-radius: 999px;
+    padding: 8px 14px; cursor: pointer; transition: all .15s;
+  }
+  .chip[aria-pressed="true"] { background: var(--green); border-color: var(--green); color: #fff; font-weight: 600; }
+
+  .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 16px; background: #fffdf7; }
+  table { width: 100%; border-collapse: collapse; font-size: 14.5px; min-width: 430px; }
+  th {
+    text-align: left; font-size: 11px; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--muted); font-weight: 600; padding: 12px 12px 10px;
+    border-bottom: 1.5px solid var(--line); background: #f8f1e0;
+    white-space: nowrap;
+  }
+  th.c, td.c { text-align: center; }
+  td { padding: 12px; border-bottom: 1px solid #efe6d2; vertical-align: top; }
+  tr:last-child td { border-bottom: 0; }
+  tbody tr { transition: background .15s; }
+  tbody tr:hover { background: #faf4e4; }
+  .name { font-weight: 600; color: var(--ink); }
+  .when { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .msg { font-size: 13px; color: var(--ink-2); font-style: italic; margin-top: 6px; background: #f6eedb; border-radius: 8px; padding: 6px 10px; max-width: 380px; }
+  .pill { display: inline-block; font-size: 12.5px; font-weight: 600; border-radius: 999px; padding: 4px 10px; white-space: nowrap; }
+  .pill.yes { background: #e7ecd9; color: var(--green-dark); }
+  .pill.no { background: #f6e3da; color: var(--red); }
+  .persons-badge { display: inline-block; min-width: 28px; font-weight: 600; color: var(--ink); background: #efe3c8; border-radius: 999px; padding: 4px 8px; font-size: 13.5px; }
+  .del {
+    font-family: inherit; width: 30px; height: 30px; border-radius: 999px;
+    border: 1.5px solid #e5c4b5; background: #fdf3ee; color: var(--red);
+    font-size: 15px; line-height: 1; cursor: pointer; transition: all .15s;
+  }
+  .del:hover { background: var(--red); border-color: var(--red); color: #fff; }
+
+  .empty { text-align: center; color: var(--muted); font-style: italic; padding: 34px 10px; }
+  .empty .big { font-size: 40px; margin-bottom: 8px; font-style: normal; }
+
+  .foot { display: flex; justify-content: space-between; align-items: center; margin-top: 18px; flex-wrap: wrap; gap: 10px; }
+  .link { font-family: inherit; background: none; border: 0; font-size: 14px; color: var(--green-dark); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+  a.link { display: inline-block; }
+  #panel { display: none; }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="card">
+    <h1>🦁 Confirmări</h1>
+    <p class="sub">Botezul lui {{nume}}</p>
+
+    <div id="login">
+      <div class="err" id="login-err">Parolă incorectă</div>
+      <input type="password" id="password" placeholder="Introduceți parola" autocomplete="current-password">
+      <button class="btn" id="login-btn">Intră</button>
+    </div>
+
+    <div id="panel">
+      <div class="stats">
+        <div class="stat"><div class="ico">📋</div><b id="st-total">0</b><small>Confirmări</small></div>
+        <div class="stat"><div class="ico">👥</div><b id="st-persons">0</b><small>Persoane</small></div>
+        <div class="stat"><div class="ico">🕊️</div><b id="st-church">0</b><small>La biserică</small></div>
+        <div class="stat"><div class="ico">🦜</div><b id="st-party">0</b><small>La petrecere</small></div>
+      </div>
+
+      <div class="toolbar">
+        <input type="text" class="search" id="search" placeholder="🔍 Caută după nume…">
+        <div class="chips" role="group" aria-label="Filtre">
+          <button class="chip" data-filter="all" aria-pressed="true">Toate</button>
+          <button class="chip" data-filter="church" aria-pressed="false">🕊️ Biserică</button>
+          <button class="chip" data-filter="party" aria-pressed="false">🦜 Petrecere</button>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Nume</th>
+              <th class="c">Pers.</th>
+              <th class="c">Biserică</th>
+              <th class="c">Petrecere</th>
+              <th class="c"></th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+        <div class="empty" id="empty" style="display:none">
+          <div class="big">🌿</div>
+          Nicio confirmare încă
+        </div>
+      </div>
+
+      <div class="foot">
+        <a class="link" href="/{{slug}}">← Vezi invitația</a>
+        <button class="link" id="logout-btn">Deconectare</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const SLUG = '{{slug}}';
+  const PW_KEY = 'fam-pw-' + SLUG;
+
+  const loginBox = document.getElementById('login');
+  const panel = document.getElementById('panel');
+  const errBox = document.getElementById('login-err');
+  const pwInput = document.getElementById('password');
+  const tbody = document.getElementById('tbody');
+  const emptyBox = document.getElementById('empty');
+
+  let allRsvps = [];
+  let filter = 'all';
+  let query = '';
+
+  function pw() { return sessionStorage.getItem(PW_KEY) || ''; }
+
+  function updateStats() {
+    document.getElementById('st-total').textContent = allRsvps.length;
+    document.getElementById('st-persons').textContent = allRsvps.reduce((s, r) => s + (r.persons || 1), 0);
+    document.getElementById('st-church').textContent = allRsvps.filter(r => r.church).reduce((s, r) => s + (r.persons || 1), 0);
+    document.getElementById('st-party').textContent = allRsvps.filter(r => r.party).reduce((s, r) => s + (r.persons || 1), 0);
+  }
+
+  function pill(v) {
+    return '<span class="pill ' + (v ? 'yes">Da ✓' : 'no">Nu ✗') + '</span>';
+  }
+
+  function render() {
+    let rows = allRsvps.slice().reverse();
+    if (filter === 'church') rows = rows.filter(r => r.church);
+    if (filter === 'party') rows = rows.filter(r => r.party);
+    if (query) rows = rows.filter(r => (r.name || '').toLowerCase().includes(query));
+
+    tbody.innerHTML = '';
+    emptyBox.style.display = rows.length ? 'none' : 'block';
+    emptyBox.lastChild.textContent = allRsvps.length ? 'Niciun rezultat pentru filtrele alese' : 'Nicio confirmare încă';
+
+    rows.forEach((r) => {
+      const tr = document.createElement('tr');
+
+      const tdName = document.createElement('td');
+      const nm = document.createElement('div');
+      nm.className = 'name';
+      nm.textContent = r.name;
+      tdName.appendChild(nm);
+      if (r.createdAt) {
+        const when = document.createElement('div');
+        when.className = 'when';
+        when.textContent = new Date(r.createdAt).toLocaleString('ro-RO', { dateStyle: 'short', timeStyle: 'short' });
+        tdName.appendChild(when);
+      }
+      if (r.message) {
+        const msg = document.createElement('div');
+        msg.className = 'msg';
+        msg.textContent = '💬 ' + r.message;
+        tdName.appendChild(msg);
+      }
+
+      const tdPers = document.createElement('td');
+      tdPers.className = 'c';
+      tdPers.innerHTML = '<span class="persons-badge">' + (r.persons || 1) + '</span>';
+
+      const tdChurch = document.createElement('td');
+      tdChurch.className = 'c';
+      tdChurch.innerHTML = pill(r.church);
+
+      const tdParty = document.createElement('td');
+      tdParty.className = 'c';
+      tdParty.innerHTML = pill(r.party);
+
+      const tdDel = document.createElement('td');
+      tdDel.className = 'c';
+      const btn = document.createElement('button');
+      btn.className = 'del';
+      btn.textContent = '✕';
+      btn.title = 'Șterge confirmarea';
+      btn.setAttribute('aria-label', 'Șterge confirmarea lui ' + r.name);
+      btn.addEventListener('click', () => removeRsvp(r));
+      tdDel.appendChild(btn);
+
+      tr.append(tdName, tdPers, tdChurch, tdParty, tdDel);
+      tbody.appendChild(tr);
+    });
+  }
+
+  async function removeRsvp(r) {
+    if (!confirm('Sigur ștergi confirmarea „' + r.name + '"?')) return;
+    try {
+      const res = await fetch('/api/rsvp/' + encodeURIComponent(SLUG) + '/' + encodeURIComponent(r.id), {
+        method: 'DELETE',
+        headers: { 'x-admin-password': pw() }
+      });
+      if (!res.ok) throw new Error();
+      allRsvps = allRsvps.filter(x => x.id !== r.id);
+      updateStats();
+      render();
+    } catch {
+      alert('Nu am putut șterge confirmarea. Încearcă din nou.');
+    }
+  }
+
+  async function load(password) {
+    const res = await fetch('/api/rsvps/' + encodeURIComponent(SLUG), { headers: { 'x-admin-password': password } });
+    if (!res.ok) throw new Error();
+    allRsvps = (await res.json()).rsvps;
+    sessionStorage.setItem(PW_KEY, password);
+    updateStats();
+    render();
+    loginBox.style.display = 'none';
+    panel.style.display = 'block';
+  }
+
+  async function tryLogin() {
+    errBox.classList.remove('show');
+    try {
+      await load(pwInput.value);
+    } catch {
+      errBox.classList.add('show');
+    }
+  }
+
+  document.getElementById('login-btn').addEventListener('click', tryLogin);
+  pwInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') tryLogin(); });
+
+  document.getElementById('logout-btn').addEventListener('click', () => {
+    sessionStorage.removeItem(PW_KEY);
+    panel.style.display = 'none';
+    loginBox.style.display = 'block';
+    pwInput.value = '';
+  });
+
+  document.querySelectorAll('.chip').forEach((chip) => {
+    chip.addEventListener('click', () => {
+      filter = chip.dataset.filter;
+      document.querySelectorAll('.chip').forEach((c) => c.setAttribute('aria-pressed', c === chip ? 'true' : 'false'));
+      render();
+    });
+  });
+
+  document.getElementById('search').addEventListener('input', (e) => {
+    query = e.target.value.trim().toLowerCase();
+    render();
+  });
+
+  const saved = sessionStorage.getItem(PW_KEY);
+  if (saved) load(saved).catch(() => sessionStorage.removeItem(PW_KEY));
+</script>
+</body>
+</html>

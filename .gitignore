@@ -1,0 +1,9 @@
+node_modules/
+
+# confirmările conțin date personale ale invitaților — nu le urcăm pe GitHub
+data/confirmari/
+
+# materiale de referință / fișiere locale, nu fac parte din aplicație
+/manus/
+/invitatie.png
+/safaritema.jpg

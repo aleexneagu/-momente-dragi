@@ -1,0 +1,24 @@
+[
+  {
+    "slug": "botez-milan-alexandru",
+    "nume": "Milan Alexandru",
+    "parinti": "Mihnea & Cristina",
+    "nasi": "Alexandru & Ruxandra",
+    "data": "2026-08-28",
+    "biserica": {
+      "nume": "Vatra Luminoasă",
+      "adresa": "Strada Tony Bulandra 21, București",
+      "ora": "15:30"
+    },
+    "petrecere": {
+      "nume": "Ambient Summer Beach",
+      "adresa": "Frumușani",
+      "ora": "19:00"
+    },
+    "introText": "Micuțul nostru face primul pas într-o aventură plină de iubire și binecuvântare, iar noi ne-am bucura enorm să fiți alături de noi la Sfântul Botez.",
+    "mesajSafari": "Pregătește-ți zâmbetul și spiritul de aventură! Leul, girafa, elefantul, zebra și toate animăluțele din safari abia așteaptă să sărbătorim împreună o zi plină de voie bună și amintiri frumoase. Vă așteptăm cu drag!",
+    "footerText": "Cu drag, familia lui Milan 🦁",
+    "parolaAdmin": "",
+    "createdAt": "2026-07-07T13:00:00.000Z"
+  }
+]

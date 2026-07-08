@@ -1,0 +1,9 @@
+{
+  "name": "invitatii-botez",
+  "version": "2.0.0",
+  "description": "Platformă de invitații de botez cu RSVP și dashboard admin — tema Safari",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  }
+}
