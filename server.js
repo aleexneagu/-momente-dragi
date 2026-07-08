@@ -14,7 +14,12 @@ const TEMPLATE_FILE = path.join(__dirname, 'templates', 'invitatie.html');
 const CONFIRMARI_TEMPLATE_FILE = path.join(__dirname, 'templates', 'confirmari.html');
 
 if (!fs.existsSync(RSVP_DIR)) fs.mkdirSync(RSVP_DIR, { recursive: true });
-if (!fs.existsSync(INVITATIONS_FILE)) fs.writeFileSync(INVITATIONS_FILE, '[]');
+if (!fs.existsSync(INVITATIONS_FILE)) {
+  // volum nou și gol → pornește cu invitațiile din repo, dacă există
+  const seed = path.join(__dirname, 'data', 'invitatii.json');
+  if (seed !== INVITATIONS_FILE && fs.existsSync(seed)) fs.copyFileSync(seed, INVITATIONS_FILE);
+  else fs.writeFileSync(INVITATIONS_FILE, '[]');
+}
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
