@@ -227,28 +227,6 @@
   }
   .sec-head p { font-size: 16.5px; line-height: 1.7; color: var(--ink-soft); }
 
-  /* features */
-  .features { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
-  @media (max-width: 940px) { .features { grid-template-columns: repeat(2, 1fr); } }
-  @media (max-width: 520px) { .features { grid-template-columns: 1fr; } }
-  .feature {
-    background: var(--card); border: 1px solid var(--line);
-    border-radius: 22px; padding: 28px 24px;
-    transition: transform .2s, box-shadow .25s;
-  }
-  .feature:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 22px 44px -20px rgba(90, 70, 40, .3);
-  }
-  .feature .ico {
-    display: inline-flex; align-items: center; justify-content: center;
-    width: 52px; height: 52px; font-size: 25px;
-    background: linear-gradient(180deg, rgba(111, 125, 67, .14), rgba(196, 160, 94, .14));
-    border: 1px solid var(--line); border-radius: 16px; margin-bottom: 18px;
-  }
-  .feature h3 { font-size: 17px; font-weight: 700; margin-bottom: 8px; letter-spacing: -.01em; }
-  .feature p { font-size: 14.5px; line-height: 1.65; color: var(--ink-soft); }
-
   /* pași */
   .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; counter-reset: pas; }
   @media (max-width: 820px) { .steps { grid-template-columns: 1fr; max-width: 460px; margin: 0 auto; } }
@@ -267,6 +245,17 @@
   .step .emoji { font-size: 30px; margin-bottom: 14px; }
   .step h3 { font-size: 17.5px; font-weight: 700; margin-bottom: 8px; }
   .step p { font-size: 14.5px; line-height: 1.65; color: var(--ink-soft); }
+  .step .checks { list-style: none; margin-top: 16px; display: grid; gap: 9px; }
+  .step .checks li {
+    position: relative; padding-left: 26px;
+    font-size: 14px; line-height: 1.5; color: var(--ink-soft);
+  }
+  .step .checks li::before {
+    content: '✓'; position: absolute; left: 0; top: 0;
+    width: 18px; height: 18px; display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: var(--sage-dark);
+    background: rgba(111, 125, 67, .16); border-radius: 999px;
+  }
 
   /* CTA final */
   .final {
@@ -323,7 +312,6 @@
   <div class="wrap nav-in">
     <a class="logo" href="/">Momente <span>Dragi</span> 🦁</a>
     <div class="nav-links">
-      <a href="#functii">Ce oferă</a>
       <a href="#pasi">Cum funcționează</a>
       <a class="nav-cta" href="/demo">Vezi o invitație ✨</a>
     </div>
@@ -367,56 +355,42 @@
   </div>
 </header>
 
-<section id="functii" class="wrap">
-  <div class="sec-head reveal">
-    <span class="eyebrow">✨ Ce oferă</span>
-    <h2>Tot ce are nevoie o invitație modernă</h2>
-    <p>Fără hârtii pierdute, fără telefoane de urmărire — invitația ta lucrează singură.</p>
-  </div>
-  <div class="features">
-    <div class="feature reveal">
-      <div class="ico">🎨</div>
-      <h3>Design tematic</h3>
-      <p>Teme dedicate fiecărui tip de eveniment, ilustrații delicate și tipografie elegantă, gândite pentru mobil.</p>
-    </div>
-    <div class="feature reveal" style="transition-delay:.08s">
-      <div class="ico">🔗</div>
-      <h3>Link personalizat</h3>
-      <p>Fiecare eveniment primește adresa lui — <b>momente-dragi.ro/evenimentul-tău</b> — ușor de trimis oriunde.</p>
-    </div>
-    <div class="feature reveal" style="transition-delay:.16s">
-      <div class="ico">✅</div>
-      <h3>Confirmări online</h3>
-      <p>Invitații răspund direct din invitație: câte persoane vin, la biserică, la petrecere, plus un mesaj drag.</p>
-    </div>
-    <div class="feature reveal" style="transition-delay:.24s">
-      <div class="ico">📊</div>
-      <h3>Statistici în timp real</h3>
-      <p>Familia are pagina ei privată cu toate confirmările, numărul de persoane și mesajele primite.</p>
-    </div>
-  </div>
-</section>
-
 <section id="pasi" class="wrap">
   <div class="sec-head reveal">
     <span class="eyebrow">🧭 Cum funcționează</span>
-    <h2>De la idee la invitație, în 3 pași</h2>
+    <h2>Tot ce are nevoie o invitație, în 3 pași simpli</h2>
+    <p>Fără hârtii pierdute, fără telefoane de urmărire — invitația ta lucrează singură.</p>
   </div>
   <div class="steps">
     <div class="step reveal">
-      <div class="emoji">📝</div>
-      <h3>Se creează invitația</h3>
-      <p>Sărbătoritul, data, locațiile și programul zilei — invitația prinde viață în câteva minute, cu tema potrivită evenimentului.</p>
+      <div class="emoji">🎨</div>
+      <h3>Se creează invitația, cu design tematic</h3>
+      <p>Sărbătoritul, data și programul zilei prind viață într-un design elegant, gândit pentru mobil.</p>
+      <ul class="checks">
+        <li>Temă dedicată tipului de eveniment</li>
+        <li>Povestea voastră și programul zilei</li>
+        <li>Locațiile, cu hartă la un click</li>
+      </ul>
     </div>
     <div class="step reveal" style="transition-delay:.1s">
       <div class="emoji">💌</div>
-      <h3>Trimiți linkul</h3>
-      <p>Primești un link personalizat pe care îl dai mai departe pe WhatsApp, SMS sau oriunde vrei. Fără tipar, fără plicuri.</p>
+      <h3>Trimiți linkul personalizat</h3>
+      <p>Invitația primește adresa ei — <b>momente-dragi.ro/evenimentul-tău</b> — gata de trimis oriunde.</p>
+      <ul class="checks">
+        <li>Se deschide instant pe orice telefon</li>
+        <li>WhatsApp, SMS sau e-mail</li>
+        <li>Fără tipar, fără plicuri</li>
+      </ul>
     </div>
     <div class="step reveal" style="transition-delay:.2s">
       <div class="emoji">🎉</div>
-      <h3>Urmărești confirmările</h3>
-      <p>Vezi în timp real cine vine, câte persoane și ce mesaje v-au lăsat — știi mereu exact câți invitați aștepți.</p>
+      <h3>Urmărești confirmările în timp real</h3>
+      <p>Invitații răspund direct din invitație, iar tu vezi totul într-o pagină privată a evenimentului.</p>
+      <ul class="checks">
+        <li>Câte persoane vin, la fiecare moment al zilei</li>
+        <li>Mesajele dragi de la invitați</li>
+        <li>Statistici live pentru familie</li>
+      </ul>
     </div>
   </div>
 </section>
