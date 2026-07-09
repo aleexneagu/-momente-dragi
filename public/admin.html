@@ -480,9 +480,20 @@
       const passLbl = document.createElement('label');
       passLbl.textContent = '🔑 Parolă familie';
       const passInput = document.createElement('input');
-      passInput.type = 'text';
+      passInput.type = 'password';
+      passInput.autocomplete = 'off';
       passInput.value = inv.parolaAdmin || '';
       passInput.placeholder = 'nesetată — intră doar parola ta';
+      const passEye = document.createElement('button');
+      passEye.className = 'mini';
+      passEye.textContent = '👁';
+      passEye.title = 'Arată / ascunde parola';
+      passEye.setAttribute('aria-label', 'Arată sau ascunde parola');
+      passEye.addEventListener('click', () => {
+        const show = passInput.type === 'password';
+        passInput.type = show ? 'text' : 'password';
+        passEye.textContent = show ? '🙈' : '👁';
+      });
       const passSave = document.createElement('button');
       passSave.className = 'mini save';
       passSave.textContent = '💾 Salvează';
@@ -501,7 +512,7 @@
           setTimeout(() => { passSave.style.display = 'none'; }, 1400);
         } catch (e) { alert(e.message); }
       });
-      passRow.append(passLbl, passInput, passSave);
+      passRow.append(passLbl, passInput, passEye, passSave);
 
       const actions = document.createElement('div');
       actions.className = 'inv-actions';
