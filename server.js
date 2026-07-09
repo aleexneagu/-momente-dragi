@@ -39,8 +39,22 @@ const RO_LUNI = ['Ianuarie', 'Februarie', 'Martie', 'Aprilie', 'Mai', 'Iunie',
   'Iulie', 'August', 'Septembrie', 'Octombrie', 'Noiembrie', 'Decembrie'];
 
 // slug-uri care nu pot fi folosite de invitații (căi rezervate)
-const RESERVED_SLUGS = ['admin', 'api', 'templates', 'data', 'public'];
+const RESERVED_SLUGS = ['admin', 'api', 'templates', 'data', 'public', 'demo'];
 const SLUG_RE = /^[a-z0-9][a-z0-9-]{1,79}$/;
+
+// invitație demonstrativă cu date fictive — arătată vizitatorilor de pe landing la /demo
+const DEMO_INVITATION = {
+  slug: 'demo',
+  nume: 'Sofia Maria',
+  parinti: 'Andrei & Ioana',
+  nasi: 'Mihai & Elena',
+  data: '2026-10-17',
+  biserica: { nume: 'Biserica Sfânta Maria', adresa: 'Strada Exemplu 10, București', ora: '15:00' },
+  petrecere: { nume: 'Salon Panoramic', adresa: 'Strada Exemplu 22, București', ora: '19:00' },
+  introText: 'Micuța noastră face primul pas într-o aventură plină de iubire și binecuvântare, iar noi ne-am bucura enorm să fiți alături de noi la Sfântul Botez.',
+  mesajSafari: 'Pregătește-ți zâmbetul și spiritul de aventură! Leul, girafa, elefantul, zebra și toate animăluțele din safari abia așteaptă să sărbătorim împreună o zi plină de voie bună și amintiri frumoase. Vă așteptăm cu drag!',
+  footerText: 'Cu drag, familia Sofiei 🦁 (invitație demonstrativă)'
+};
 
 // ---------- stocare ----------
 
@@ -54,7 +68,10 @@ function readJson(file, fallback) {
 
 function loadInvitations() { return readJson(INVITATIONS_FILE, []); }
 function saveInvitations(list) { fs.writeFileSync(INVITATIONS_FILE, JSON.stringify(list, null, 2)); }
-function findInvitation(slug) { return loadInvitations().find((i) => i.slug === slug); }
+function findInvitation(slug) {
+  if (slug === DEMO_INVITATION.slug) return DEMO_INVITATION;
+  return loadInvitations().find((i) => i.slug === slug);
+}
 
 function rsvpFile(slug) { return path.join(RSVP_DIR, slug + '.json'); }
 function readRsvps(slug) { return readJson(rsvpFile(slug), []); }
