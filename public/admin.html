@@ -74,16 +74,37 @@
   .view-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
   .view-head h2 { font-family: 'Caveat', cursive; font-size: 29px; color: var(--ink); font-weight: 700; }
 
+  .list-search { margin-bottom: 14px; border-radius: 999px; padding: 11px 18px; font-size: 14px; }
   .inv {
-    border: 1px solid var(--line); border-radius: 18px; background: #fff;
-    padding: 16px; margin-bottom: 12px;
-    transition: box-shadow .2s;
+    border: 1px solid var(--line); border-radius: 20px; background: #fff;
+    padding: 18px; margin-bottom: 14px;
+    transition: transform .18s, box-shadow .2s;
   }
-  .inv:hover { box-shadow: 0 14px 30px -18px rgba(40, 62, 68, .35); }
-  .inv-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
-  .inv-name { font-family: 'Caveat', cursive; font-size: 27px; color: var(--ink); font-weight: 700; }
-  .inv-date { font-size: 13px; color: var(--muted); }
-  .inv-link { display: flex; align-items: center; gap: 8px; margin: 10px 0 12px; flex-wrap: wrap; }
+  .inv:hover { transform: translateY(-2px); box-shadow: 0 18px 38px -20px rgba(40, 62, 68, .38); }
+  .inv-head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .inv-avatar {
+    width: 48px; height: 48px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--grad); color: #fff;
+    font-size: 17px; font-weight: 700; letter-spacing: .02em;
+    border-radius: 15px;
+    box-shadow: 0 8px 18px -8px rgba(31, 116, 104, .5);
+  }
+  .inv-info { flex: 1; min-width: 0; }
+  .inv-name { font-family: 'Caveat', cursive; font-size: 26px; line-height: 1.1; color: var(--ink); font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .inv-date { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+  .inv-count {
+    font-family: inherit; font-size: 13px; font-weight: 600; color: var(--teal-dark);
+    background: rgba(42, 157, 143, .12); border: 1px solid rgba(42, 157, 143, .25);
+    border-radius: 999px; padding: 7px 13px; cursor: pointer; white-space: nowrap;
+    transition: all .15s;
+  }
+  .inv-count:hover { background: var(--teal); border-color: var(--teal); color: #fff; }
+  .inv-pass { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+  .inv-pass label { font-size: 12.5px; font-weight: 600; color: var(--muted); white-space: nowrap; }
+  .inv-pass input { flex: 1; min-width: 150px; width: auto; font-size: 13.5px; padding: 8px 13px; border-radius: 999px; }
+  .inv-pass .save { display: none; }
+  .inv-link { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; flex-wrap: wrap; }
   .inv-link code {
     background: rgba(46, 127, 163, .08); border-radius: 8px; padding: 5px 9px;
     font-size: 13px; color: var(--ink-soft); word-break: break-all;
@@ -184,6 +205,7 @@
           <h2>Invitațiile tale</h2>
           <button class="btn" id="new-btn">➕ Invitație nouă</button>
         </div>
+        <input type="text" class="list-search" id="inv-search" placeholder="🔍 Caută invitația după nume…">
         <div id="inv-list"></div>
         <div class="empty" id="inv-empty" style="display:none">
           <div class="big">🌿</div>
@@ -344,6 +366,7 @@
     'Iulie', 'August', 'Septembrie', 'Octombrie', 'Noiembrie', 'Decembrie'];
 
   let invitations = [];
+  let invQuery = '';        // căutare în lista de invitații
   let editingSlug = null;   // null = creare, altfel slug-ul editat
   let slugTouched = false;  // true dacă adminul a modificat manual slug-ul
   let currentSlug = null;   // invitația ale cărei confirmări sunt afișate
@@ -382,24 +405,46 @@
     return RO_ZILE[d.getDay()] + ', ' + d.getDate() + ' ' + RO_LUNI[d.getMonth()] + ' ' + d.getFullYear();
   }
 
+  function initials(name) {
+    return name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+  }
+
   function renderList() {
     const box = $('inv-list');
     box.innerHTML = '';
-    $('inv-empty').style.display = invitations.length ? 'none' : 'block';
+    const shown = invitations.filter((inv) =>
+      !invQuery || (inv.nume + ' ' + inv.slug).toLowerCase().includes(invQuery));
+    const emptyBox = $('inv-empty');
+    emptyBox.style.display = shown.length ? 'none' : 'block';
+    emptyBox.lastChild.textContent = invitations.length
+      ? ' Nicio invitație nu se potrivește căutării.'
+      : ' Nicio invitație încă — creează prima cu butonul de mai sus.';
 
-    invitations.forEach((inv) => {
+    shown.forEach((inv) => {
       const card = document.createElement('div');
       card.className = 'inv';
 
-      const top = document.createElement('div');
-      top.className = 'inv-top';
-      const nm = document.createElement('span');
+      // antet: avatar cu inițiale + nume/dată + contor confirmări
+      const head = document.createElement('div');
+      head.className = 'inv-head';
+      const avatar = document.createElement('div');
+      avatar.className = 'inv-avatar';
+      avatar.textContent = initials(inv.nume);
+      const info = document.createElement('div');
+      info.className = 'inv-info';
+      const nm = document.createElement('div');
       nm.className = 'inv-name';
       nm.textContent = inv.nume;
-      const dt = document.createElement('span');
+      const dt = document.createElement('div');
       dt.className = 'inv-date';
-      dt.textContent = formatDate(inv.data);
-      top.append(nm, dt);
+      dt.textContent = '📅 ' + formatDate(inv.data);
+      info.append(nm, dt);
+      const count = document.createElement('button');
+      count.className = 'inv-count';
+      count.textContent = '👥 ' + (inv.rsvpCount || 0) + ' confirmări';
+      count.title = 'Vezi confirmările';
+      count.addEventListener('click', () => openRsvps(inv));
+      head.append(avatar, info, count);
 
       const linkRow = document.createElement('div');
       linkRow.className = 'inv-link';
@@ -429,12 +474,37 @@
       famLink.textContent = '👨‍👩‍👧 Pagina familiei';
       linkRow.append(code, copyBtn, openLink, famLink);
 
+      // parola familiei — vizibilă și editabilă direct de pe card
+      const passRow = document.createElement('div');
+      passRow.className = 'inv-pass';
+      const passLbl = document.createElement('label');
+      passLbl.textContent = '🔑 Parolă familie';
+      const passInput = document.createElement('input');
+      passInput.type = 'text';
+      passInput.value = inv.parolaAdmin || '';
+      passInput.placeholder = 'nesetată — intră doar parola ta';
+      const passSave = document.createElement('button');
+      passSave.className = 'mini save';
+      passSave.textContent = '💾 Salvează';
+      passInput.addEventListener('input', () => {
+        passSave.style.display = 'inline-block';
+        passSave.textContent = '💾 Salvează';
+      });
+      passSave.addEventListener('click', async () => {
+        try {
+          const { rsvpCount, ...payload } = inv;
+          payload.parolaAdmin = passInput.value.trim();
+          await api('/api/admin/invitations/' + encodeURIComponent(inv.slug), { method: 'PUT', body: JSON.stringify(payload) });
+          inv.parolaAdmin = payload.parolaAdmin;
+          passInput.value = inv.parolaAdmin;
+          passSave.textContent = '✓ Salvat';
+          setTimeout(() => { passSave.style.display = 'none'; }, 1400);
+        } catch (e) { alert(e.message); }
+      });
+      passRow.append(passLbl, passInput, passSave);
+
       const actions = document.createElement('div');
       actions.className = 'inv-actions';
-      const rsvpsBtn = document.createElement('button');
-      rsvpsBtn.className = 'btn-outline';
-      rsvpsBtn.textContent = '👥 Confirmări (' + (inv.rsvpCount || 0) + ')';
-      rsvpsBtn.addEventListener('click', () => openRsvps(inv));
       const editBtn = document.createElement('button');
       editBtn.className = 'btn-outline';
       editBtn.textContent = '✏️ Editează';
@@ -449,9 +519,9 @@
           await refreshList();
         } catch (e) { alert(e.message); }
       });
-      actions.append(rsvpsBtn, editBtn, delBtn);
+      actions.append(editBtn, delBtn);
 
-      card.append(top, linkRow, actions);
+      card.append(head, linkRow, passRow, actions);
       box.appendChild(card);
     });
   }
@@ -646,6 +716,11 @@
   $('search').addEventListener('input', (e) => {
     query = e.target.value.trim().toLowerCase();
     renderRsvps();
+  });
+
+  $('inv-search').addEventListener('input', (e) => {
+    invQuery = e.target.value.trim().toLowerCase();
+    renderList();
   });
 
   // ---------- login ----------
