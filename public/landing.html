@@ -523,7 +523,7 @@
     <small>Scrie-ne și îți răspundem cât de repede putem</small>
   </div>
   <div class="chat-body">
-    <div class="chat-bubble">Salut! 👋 Vrei o invitație pentru evenimentul tău sau ai o întrebare? Lasă-ne un mesaj și datele tale de contact.</div>
+    <div class="chat-bubble" id="chat-bubble">Salut! 👋 Vrei o invitație pentru evenimentul tău sau ai o întrebare? Lasă-ne un mesaj și datele tale de contact.</div>
     <form id="chat-form" novalidate>
       <div class="chat-err" id="chat-err"></div>
       <input type="text" id="chat-name" placeholder="Numele tău *" maxlength="120" autocomplete="name">
@@ -552,6 +552,15 @@
   const chatErr = document.getElementById('chat-err');
   const chatOk = document.getElementById('chat-ok');
   const chatSend = document.getElementById('chat-send');
+  const chatBubble = document.getElementById('chat-bubble');
+
+  // cine a mai trimis un mesaj nu mai primește salutul lung de introducere
+  function markReturningSender() {
+    chatBubble.textContent = 'Bine ai revenit! 👋 Dacă mai ai întrebări, scrie-ne oricând.';
+  }
+  try {
+    if (localStorage.getItem('md-chat-sent')) markReturningSender();
+  } catch {}
 
   function setChatOpen(open) {
     chatPanel.classList.toggle('open', open);
@@ -585,6 +594,8 @@
       if (!res.ok) throw new Error();
       chatForm.style.display = 'none';
       chatOk.classList.add('show');
+      try { localStorage.setItem('md-chat-sent', '1'); } catch {}
+      markReturningSender();
     } catch {
       chatErr.textContent = 'A apărut o eroare. Te rog încearcă din nou.';
       chatErr.classList.add('show');
