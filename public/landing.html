@@ -11,17 +11,17 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=Caveat:wght@700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #fdf9f5;
-    --ink: #332a3d;
-    --ink-soft: #625671;
-    --muted: #97899f;
-    --rose: #dd5578;
-    --rose-dark: #c23f63;
-    --lilac: #8b6fd8;
+    --bg: #fdf9f4;
+    --ink: #27343a;
+    --ink-soft: #566670;
+    --muted: #8b9aa0;
+    --rose: #2a9d8f;
+    --rose-dark: #1f7468;
+    --lilac: #2e7fa3;
     --peach: #f0a05a;
-    --card: #fffdfb;
-    --line: #f0e2e0;
-    --grad: linear-gradient(135deg, #e0567c, #9d6fd8);
+    --card: #fffdfa;
+    --line: #e9e2d6;
+    --grad: linear-gradient(135deg, #2fa08f, #2e7fa3);
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -35,7 +35,7 @@
     overflow-x: hidden;
   }
 
-  ::selection { background: rgba(221, 85, 120, .22); }
+  ::selection { background: rgba(42, 157, 143, .22); }
 
   .wrap { max-width: 1080px; margin: 0 auto; padding: 0 22px; }
 
@@ -43,16 +43,16 @@
   .bg {
     position: fixed; inset: 0; z-index: -2; pointer-events: none;
     background:
-      radial-gradient(640px 480px at 88% -6%, rgba(221, 85, 120, .13), transparent 65%),
-      radial-gradient(760px 560px at -8% 24%, rgba(139, 111, 216, .12), transparent 65%),
+      radial-gradient(640px 480px at 88% -6%, rgba(42, 157, 143, .14), transparent 65%),
+      radial-gradient(760px 560px at -8% 24%, rgba(46, 127, 163, .12), transparent 65%),
       radial-gradient(640px 540px at 55% 108%, rgba(240, 160, 90, .12), transparent 65%),
       linear-gradient(180deg, #fefbf8 0%, #faf3ef 100%);
   }
   .bg::after {
     content: ''; position: absolute; inset: 0; opacity: .5;
     background-image:
-      radial-gradient(rgba(221, 85, 120, .18) 1.5px, transparent 1.5px),
-      radial-gradient(rgba(139, 111, 216, .15) 1.5px, transparent 1.5px);
+      radial-gradient(rgba(42, 157, 143, .2) 1.5px, transparent 1.5px),
+      radial-gradient(rgba(240, 160, 90, .22) 1.5px, transparent 1.5px);
     background-size: 96px 96px, 128px 128px;
     background-position: 0 0, 48px 64px;
     -webkit-mask-image: linear-gradient(180deg, rgba(0,0,0,.7), transparent 55%);
@@ -115,8 +115,8 @@
     display: inline-flex; align-items: center; gap: 8px;
     font-size: 12.5px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase;
     color: var(--rose-dark);
-    background: rgba(221, 85, 120, .1);
-    border: 1px solid rgba(221, 85, 120, .22);
+    background: rgba(42, 157, 143, .1);
+    border: 1px solid rgba(42, 157, 143, .25);
     border-radius: 999px; padding: 8px 16px; margin-bottom: 26px;
   }
 
@@ -150,12 +150,12 @@
     background: var(--grad);
     border: 0; border-radius: 999px; padding: 16px 30px;
     text-decoration: none; cursor: pointer;
-    box-shadow: 0 14px 32px -12px rgba(194, 63, 99, .55);
+    box-shadow: 0 14px 32px -12px rgba(31, 116, 104, .55);
     transition: transform .15s, box-shadow .2s, filter .2s;
   }
   .btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 18px 38px -12px rgba(194, 63, 99, .6);
+    box-shadow: 0 18px 38px -12px rgba(31, 116, 104, .6);
     filter: brightness(1.04);
   }
   .btn-ghost {
@@ -172,10 +172,10 @@
   .phone-zone { display: flex; justify-content: center; position: relative; }
   .phone {
     width: 300px; border-radius: 42px;
-    background: #332a3d;
+    background: #27343a;
     padding: 12px;
     box-shadow:
-      0 40px 80px -30px rgba(70, 40, 70, .45),
+      0 40px 80px -30px rgba(40, 62, 68,.45),
       0 0 0 1px rgba(0, 0, 0, .06);
     transform: rotate(3deg);
     transition: transform .4s ease;
@@ -185,9 +185,9 @@
     border-radius: 32px; overflow: hidden;
     background:
       radial-gradient(220px 160px at 90% 0%, rgba(240, 160, 90, .2), transparent 70%),
-      radial-gradient(240px 180px at 0% 100%, rgba(139, 111, 216, .18), transparent 70%),
-      radial-gradient(rgba(221, 85, 120, .14) 1.5px, transparent 1.5px) 0 0 / 34px 34px,
-      linear-gradient(180deg, #fffdfb, #fdf4f0);
+      radial-gradient(240px 180px at 0% 100%, rgba(46, 127, 163, .16), transparent 70%),
+      radial-gradient(rgba(42, 157, 143, .16) 1.5px, transparent 1.5px) 0 0 / 34px 34px,
+      linear-gradient(180deg, #fffdfa, #f4f6f0);
     padding: 30px 20px 24px;
     text-align: center;
   }
@@ -207,7 +207,7 @@
   .mini-count div {
     background: rgba(255, 255, 255, .8); border: 1px solid var(--line);
     border-radius: 10px; width: 46px; padding: 7px 2px;
-    box-shadow: 0 4px 10px -6px rgba(70, 40, 70, .2);
+    box-shadow: 0 4px 10px -6px rgba(40, 62, 68,.2);
   }
   .mini-count b { display: block; font-size: 15px; color: var(--ink); }
   .mini-count small { font-size: 8px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
@@ -215,7 +215,7 @@
     display: block; font-size: 13px; font-weight: 600; color: #fff;
     background: var(--grad);
     border-radius: 999px; padding: 12px; margin-bottom: 10px;
-    box-shadow: 0 8px 18px -8px rgba(194, 63, 99, .55);
+    box-shadow: 0 8px 18px -8px rgba(31, 116, 104, .55);
   }
   .screen .mini-foot { font-family: 'Caveat', cursive; font-size: 16px; color: var(--ink-soft); }
 
@@ -224,7 +224,7 @@
     background: var(--card); border: 1px solid var(--line);
     border-radius: 14px; padding: 11px 15px;
     font-size: 13px; font-weight: 600; color: var(--ink);
-    box-shadow: 0 14px 30px -14px rgba(70, 40, 70, .3);
+    box-shadow: 0 14px 30px -14px rgba(40, 62, 68,.3);
     animation: drift 9s ease-in-out infinite;
   }
   .phone-badge .dot {
@@ -257,7 +257,7 @@
   }
   .step:hover {
     transform: translateY(-5px);
-    box-shadow: 0 24px 48px -22px rgba(70, 40, 70, .28);
+    box-shadow: 0 24px 48px -22px rgba(40, 62, 68,.28);
   }
   .step::before {
     content: counter(pas, decimal-leading-zero);
@@ -274,9 +274,9 @@
     border-radius: 17px; margin-bottom: 16px;
     border: 1px solid var(--line);
   }
-  .step:nth-child(1) .ico { background: rgba(221, 85, 120, .1); }
-  .step:nth-child(2) .ico { background: rgba(139, 111, 216, .1); }
-  .step:nth-child(3) .ico { background: rgba(240, 160, 90, .12); }
+  .step:nth-child(1) .ico { background: rgba(42, 157, 143, .12); }
+  .step:nth-child(2) .ico { background: rgba(46, 127, 163, .12); }
+  .step:nth-child(3) .ico { background: rgba(240, 160, 90, .14); }
   .step h3 { font-size: 17.5px; font-weight: 700; margin-bottom: 8px; letter-spacing: -.01em; }
   .step p { font-size: 14.5px; line-height: 1.65; color: var(--ink-soft); }
   .step .checks { list-style: none; margin-top: 16px; display: grid; gap: 9px; }
@@ -297,7 +297,7 @@
     background:
       radial-gradient(rgba(255, 255, 255, .14) 2px, transparent 2px) 0 0 / 44px 44px,
       radial-gradient(560px 320px at 92% 0%, rgba(240, 160, 90, .35), transparent 65%),
-      linear-gradient(135deg, #b8436b, #7d5bc4);
+      linear-gradient(135deg, #1f7468, #2e6390);
     border-radius: 30px;
     padding: 64px 30px;
     text-align: center; color: #fff;
@@ -381,7 +381,7 @@
           <div><b>33</b><small>Sec</small></div>
         </div>
         <span class="mini-btn-demo">Confirmă prezența</span>
-        <p class="mini-foot">Cu drag, familia Sofiei 💕</p>
+        <p class="mini-foot">Cu drag, familia Sofiei 🧡</p>
       </div>
     </div>
     <div class="phone-badge badge-1" aria-hidden="true"><span class="dot"></span> Fam. Popescu a confirmat · 4 pers.</div>
@@ -439,7 +439,7 @@
 </div>
 
 <footer class="wrap">
-  <span>© 2026 Momente Dragi · făcut cu drag 💕</span>
+  <span>© 2026 Momente Dragi · făcut cu drag 🧡</span>
   <a href="/admin">Administrare</a>
 </footer>
 
