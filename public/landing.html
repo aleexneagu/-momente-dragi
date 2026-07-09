@@ -87,6 +87,8 @@
   .logo span {
     background: var(--grad);
     -webkit-background-clip: text; background-clip: text; color: transparent;
+    /* coada literei finale iese din caseta textului — fără spațiul ăsta, clip-ul o taie */
+    padding-right: .14em; margin-right: -.14em;
   }
   .nav-links { display: flex; align-items: center; gap: 22px; }
   .nav-links a {
@@ -141,6 +143,7 @@
     font-style: normal; white-space: nowrap; position: relative;
     background: var(--grad);
     -webkit-background-clip: text; background-clip: text; color: transparent;
+    padding-right: .08em; margin-right: -.08em;
   }
   h1 em svg {
     position: absolute; left: 2%; right: 2%; bottom: -.14em; width: 96%; height: .3em;
