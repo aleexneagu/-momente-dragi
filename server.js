@@ -308,9 +308,10 @@ const server = http.createServer(async (req, res) => {
 
   // --- pagini ---
   if (req.method === 'GET' || req.method === 'HEAD') {
-    // rădăcina și /admin → dashboard-ul de configurare
+    // rădăcina → pagina de prezentare; /admin → dashboard-ul de configurare
     if (url.pathname === '/' || url.pathname === '/admin') {
-      return fs.readFile(path.join(PUBLIC_DIR, 'admin.html'), (err, content) => {
+      const file = url.pathname === '/' ? 'landing.html' : 'admin.html';
+      return fs.readFile(path.join(PUBLIC_DIR, file), (err, content) => {
         if (err) return sendHtml(res, 500, '<h1>Eroare</h1>');
         res.writeHead(200, { 'Content-Type': MIME['.html'] });
         res.end(content);

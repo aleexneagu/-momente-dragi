@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Momente Dragi — Invitații digitale de botez</title>
+<meta name="description" content="Invitații digitale de botez cu design tematic, link personalizat și confirmări online în timp real.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦁</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=Caveat:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #faf6ec;
+    --cream-2: #f3ecdb;
+    --ink: #35392a;
+    --ink-soft: #5c5a48;
+    --muted: #8a8672;
+    --sage: #6f7d43;
+    --sage-dark: #55632f;
+    --gold: #c4a05e;
+    --terra: #c37e56;
+    --card: #fffdf6;
+    --line: #e7dcc2;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    color: var(--ink);
+    background: var(--cream);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  ::selection { background: rgba(111, 125, 67, .25); }
+
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 22px; }
+
+  /* ---------- fundal decorativ ---------- */
+  .bg {
+    position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background:
+      radial-gradient(720px 520px at 85% -5%, rgba(196, 160, 94, .22), transparent 65%),
+      radial-gradient(820px 620px at -10% 20%, rgba(111, 125, 67, .16), transparent 65%),
+      radial-gradient(700px 600px at 50% 110%, rgba(195, 126, 86, .12), transparent 65%),
+      linear-gradient(180deg, #fbf7ee 0%, #f4eddb 100%);
+  }
+
+  /* animăluțe plutitoare, discrete */
+  .float-animal {
+    position: fixed; z-index: -1; font-size: 42px; opacity: .13;
+    animation: drift 16s ease-in-out infinite; pointer-events: none;
+    filter: saturate(.8);
+  }
+  @keyframes drift {
+    0%, 100% { transform: translateY(0) rotate(-4deg); }
+    50% { transform: translateY(-26px) rotate(5deg); }
+  }
+
+  /* ---------- nav ---------- */
+  nav {
+    position: sticky; top: 0; z-index: 20;
+    background: rgba(250, 246, 236, .82);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(231, 220, 194, .7);
+  }
+  .nav-in {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 15px 0;
+  }
+  .logo {
+    font-family: 'Caveat', cursive; font-size: 27px; font-weight: 700;
+    color: var(--ink); text-decoration: none; letter-spacing: .01em;
+  }
+  .logo span { color: var(--sage); }
+  .nav-links { display: flex; align-items: center; gap: 22px; }
+  .nav-links a {
+    font-size: 14.5px; font-weight: 500; color: var(--ink-soft);
+    text-decoration: none; transition: color .15s;
+  }
+  .nav-links a:hover { color: var(--sage-dark); }
+  .nav-cta {
+    font-size: 14px !important; font-weight: 600 !important; color: #fff !important;
+    background: var(--ink); border-radius: 999px; padding: 10px 20px;
+    transition: transform .15s, background .15s !important;
+  }
+  .nav-cta:hover { background: var(--sage-dark); transform: translateY(-1px); }
+  @media (max-width: 620px) { .nav-links a:not(.nav-cta) { display: none; } }
+
+  /* ---------- hero ---------- */
+  .hero {
+    display: grid; grid-template-columns: 1.1fr .9fr; gap: 48px;
+    align-items: center; padding: 84px 0 96px;
+  }
+  @media (max-width: 860px) {
+    .hero { grid-template-columns: 1fr; padding: 56px 0 64px; gap: 56px; }
+  }
+
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 12.5px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--sage-dark);
+    background: rgba(111, 125, 67, .12);
+    border: 1px solid rgba(111, 125, 67, .22);
+    border-radius: 999px; padding: 8px 16px; margin-bottom: 26px;
+  }
+
+  h1 {
+    font-family: 'Fraunces', Georgia, serif;
+    font-weight: 600;
+    font-size: clamp(40px, 6vw, 64px);
+    line-height: 1.06;
+    letter-spacing: -.015em;
+    margin-bottom: 22px;
+  }
+  h1 em {
+    font-style: normal; color: var(--sage);
+    position: relative; white-space: nowrap;
+  }
+  h1 em::after {
+    content: ''; position: absolute; left: 0; right: 0; bottom: .04em;
+    height: .28em; background: rgba(196, 160, 94, .35);
+    border-radius: 999px; z-index: -1;
+  }
+
+  .hero p.lead {
+    font-size: 18px; line-height: 1.7; color: var(--ink-soft);
+    max-width: 46ch; margin-bottom: 34px;
+  }
+
+  .cta-row { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
+  .btn-primary {
+    display: inline-flex; align-items: center; gap: 9px;
+    font-family: inherit; font-size: 16px; font-weight: 600; color: #fff;
+    background: linear-gradient(180deg, var(--sage), var(--sage-dark));
+    border: 0; border-radius: 999px; padding: 16px 30px;
+    text-decoration: none; cursor: pointer;
+    box-shadow: 0 14px 30px -12px rgba(85, 99, 47, .55);
+    transition: transform .15s, box-shadow .2s;
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 18px 36px -12px rgba(85, 99, 47, .6); }
+  .btn-ghost {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 15.5px; font-weight: 600; color: var(--ink);
+    text-decoration: none; padding: 15px 10px;
+    transition: color .15s;
+  }
+  .btn-ghost:hover { color: var(--sage-dark); }
+  .btn-ghost .arrow { transition: transform .18s; }
+  .btn-ghost:hover .arrow { transform: translateY(3px); }
+
+  /* ---------- mockup telefon ---------- */
+  .phone-zone { display: flex; justify-content: center; position: relative; }
+  .phone {
+    width: 300px; border-radius: 42px;
+    background: #2c2a24;
+    padding: 12px;
+    box-shadow:
+      0 40px 80px -30px rgba(60, 50, 25, .5),
+      0 0 0 1px rgba(0, 0, 0, .08);
+    transform: rotate(3deg);
+    transition: transform .4s ease;
+  }
+  .phone:hover { transform: rotate(1deg) translateY(-6px); }
+  .screen {
+    border-radius: 32px; overflow: hidden;
+    background:
+      linear-gradient(rgba(255, 252, 244, .9), rgba(255, 252, 244, .9)),
+      url('/safaritema.jpg') top center / 200% auto repeat;
+    padding: 30px 20px 24px;
+    text-align: center;
+  }
+  .screen .mini-kicker {
+    font-size: 9px; letter-spacing: .26em; text-transform: uppercase;
+    color: #8b7355; margin-bottom: 8px; font-weight: 600;
+  }
+  .screen .mini-name {
+    font-family: 'Caveat', cursive; font-weight: 700;
+    font-size: 34px; color: #4a3c2e; line-height: 1.1; margin-bottom: 12px;
+  }
+  .screen .mini-date {
+    font-family: 'Fraunces', serif; font-size: 30px; font-weight: 600; color: #4a3c2e;
+  }
+  .screen .mini-month { font-size: 11px; letter-spacing: .14em; color: #6b5a4a; margin-top: 2px; margin-bottom: 16px; }
+  .mini-count { display: flex; justify-content: center; gap: 6px; margin-bottom: 18px; }
+  .mini-count div {
+    background: rgba(239, 227, 200, .8); border: 1px solid #e3d4b6;
+    border-radius: 10px; width: 46px; padding: 7px 2px;
+  }
+  .mini-count b { display: block; font-size: 15px; color: #4a3c2e; }
+  .mini-count small { font-size: 8px; letter-spacing: .1em; text-transform: uppercase; color: #6b5a4a; }
+  .mini-btn-demo {
+    display: block; font-size: 13px; font-weight: 600; color: #fff;
+    background: linear-gradient(180deg, #6f7d43, #5c6836);
+    border-radius: 999px; padding: 12px; margin-bottom: 10px;
+  }
+  .screen .mini-foot { font-family: 'Caveat', cursive; font-size: 16px; color: #6b5a4a; }
+
+  .phone-badge {
+    position: absolute; display: flex; align-items: center; gap: 8px;
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 14px; padding: 11px 15px;
+    font-size: 13px; font-weight: 600; color: var(--ink);
+    box-shadow: 0 14px 30px -14px rgba(90, 70, 40, .35);
+    animation: drift 9s ease-in-out infinite;
+  }
+  .phone-badge .dot {
+    width: 8px; height: 8px; border-radius: 999px; background: #7cb454;
+    box-shadow: 0 0 0 4px rgba(124, 180, 84, .2);
+  }
+  .badge-1 { top: 12%; left: -4%; animation-delay: -2s; }
+  .badge-2 { bottom: 10%; right: -6%; animation-delay: -5s; }
+  @media (max-width: 400px) { .badge-1 { left: 0; } .badge-2 { right: 0; } }
+
+  /* ---------- secțiuni ---------- */
+  section { padding: 40px 0 30px; }
+  .sec-head { text-align: center; max-width: 60ch; margin: 0 auto 52px; }
+  .sec-head .eyebrow { margin-bottom: 18px; }
+  h2 {
+    font-family: 'Fraunces', Georgia, serif; font-weight: 600;
+    font-size: clamp(30px, 4.2vw, 42px); line-height: 1.15; letter-spacing: -.01em;
+    margin-bottom: 14px;
+  }
+  .sec-head p { font-size: 16.5px; line-height: 1.7; color: var(--ink-soft); }
+
+  /* features */
+  .features { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  @media (max-width: 940px) { .features { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 520px) { .features { grid-template-columns: 1fr; } }
+  .feature {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 22px; padding: 28px 24px;
+    transition: transform .2s, box-shadow .25s;
+  }
+  .feature:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 22px 44px -20px rgba(90, 70, 40, .3);
+  }
+  .feature .ico {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 52px; height: 52px; font-size: 25px;
+    background: linear-gradient(180deg, rgba(111, 125, 67, .14), rgba(196, 160, 94, .14));
+    border: 1px solid var(--line); border-radius: 16px; margin-bottom: 18px;
+  }
+  .feature h3 { font-size: 17px; font-weight: 700; margin-bottom: 8px; letter-spacing: -.01em; }
+  .feature p { font-size: 14.5px; line-height: 1.65; color: var(--ink-soft); }
+
+  /* pași */
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; counter-reset: pas; }
+  @media (max-width: 820px) { .steps { grid-template-columns: 1fr; max-width: 460px; margin: 0 auto; } }
+  .step {
+    position: relative; counter-increment: pas;
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 22px; padding: 30px 26px 26px;
+    overflow: hidden;
+  }
+  .step::before {
+    content: counter(pas, decimal-leading-zero);
+    position: absolute; top: 10px; right: 18px;
+    font-family: 'Fraunces', serif; font-size: 64px; font-weight: 700;
+    color: rgba(111, 125, 67, .12); line-height: 1;
+  }
+  .step .emoji { font-size: 30px; margin-bottom: 14px; }
+  .step h3 { font-size: 17.5px; font-weight: 700; margin-bottom: 8px; }
+  .step p { font-size: 14.5px; line-height: 1.65; color: var(--ink-soft); }
+
+  /* CTA final */
+  .final {
+    margin: 70px 0 80px;
+    background:
+      radial-gradient(500px 300px at 90% 0%, rgba(196, 160, 94, .35), transparent 65%),
+      radial-gradient(500px 340px at 5% 100%, rgba(255, 255, 255, .12), transparent 60%),
+      linear-gradient(140deg, var(--sage-dark), var(--sage));
+    border-radius: 30px;
+    padding: 64px 30px;
+    text-align: center; color: #fff;
+    position: relative; overflow: hidden;
+  }
+  .final h2 { color: #fff; }
+  .final p { font-size: 16.5px; opacity: .88; max-width: 48ch; margin: 0 auto 32px; line-height: 1.7; }
+  .final .btn-primary {
+    background: #fff; color: var(--sage-dark);
+    box-shadow: 0 16px 34px -14px rgba(0, 0, 0, .4);
+  }
+  .final .paw { position: absolute; font-size: 90px; opacity: .1; }
+  .paw-1 { top: -18px; left: 4%; transform: rotate(-16deg); }
+  .paw-2 { bottom: -22px; right: 5%; transform: rotate(14deg); }
+
+  footer {
+    border-top: 1px solid var(--line);
+    padding: 30px 0 36px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; flex-wrap: wrap;
+    font-size: 14px; color: var(--muted);
+  }
+  footer a { color: var(--muted); text-decoration: none; }
+  footer a:hover { color: var(--sage-dark); }
+
+  /* animații la scroll */
+  .reveal { opacity: 0; transform: translateY(22px); transition: opacity .6s ease, transform .6s ease; }
+  .reveal.in { opacity: 1; transform: none; }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .float-animal, .phone-badge { animation: none; }
+    .reveal { opacity: 1; transform: none; transition: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="bg" aria-hidden="true"></div>
+<div class="float-animal" style="top:16%; left:5%;" aria-hidden="true">🦒</div>
+<div class="float-animal" style="top:64%; left:3%; animation-delay:-6s;" aria-hidden="true">🦜</div>
+<div class="float-animal" style="top:30%; right:4%; animation-delay:-3s;" aria-hidden="true">🐘</div>
+<div class="float-animal" style="top:78%; right:7%; animation-delay:-9s;" aria-hidden="true">🦓</div>
+
+<nav>
+  <div class="wrap nav-in">
+    <a class="logo" href="/">Momente <span>Dragi</span> 🦁</a>
+    <div class="nav-links">
+      <a href="#functii">Ce oferă</a>
+      <a href="#pasi">Cum funcționează</a>
+      <a class="nav-cta" href="/botez-milan-alexandru">Vezi o invitație ✨</a>
+    </div>
+  </div>
+</nav>
+
+<header class="wrap hero">
+  <div>
+    <span class="eyebrow">🌿 Invitații digitale de botez</span>
+    <h1>Invitația perfectă pentru <em>momentele dragi</em> ale familiei tale</h1>
+    <p class="lead">
+      Creează o invitație de botez elegantă, cu povestea voastră, programul zilei și
+      confirmare de prezență online — totul într-un link pe care îl trimiți pe WhatsApp
+      în câteva secunde.
+    </p>
+    <div class="cta-row">
+      <a class="btn-primary" href="/botez-milan-alexandru">Vezi o invitație exemplu 🦁</a>
+      <a class="btn-ghost" href="#pasi">Cum funcționează <span class="arrow">↓</span></a>
+    </div>
+  </div>
+
+  <div class="phone-zone">
+    <div class="phone" aria-hidden="true">
+      <div class="screen">
+        <p class="mini-kicker">Sfântul Botez</p>
+        <p class="mini-name">Milan Alexandru</p>
+        <p class="mini-date">28</p>
+        <p class="mini-month">AUGUST · 2026</p>
+        <div class="mini-count">
+          <div><b>50</b><small>Zile</small></div>
+          <div><b>12</b><small>Ore</small></div>
+          <div><b>08</b><small>Min</small></div>
+          <div><b>33</b><small>Sec</small></div>
+        </div>
+        <span class="mini-btn-demo">Confirmă prezența</span>
+        <p class="mini-foot">Cu drag, familia 🦁</p>
+      </div>
+    </div>
+    <div class="phone-badge badge-1" aria-hidden="true"><span class="dot"></span> Fam. Popescu a confirmat · 4 pers.</div>
+    <div class="phone-badge badge-2" aria-hidden="true">🎉 32 de confirmări până acum</div>
+  </div>
+</header>
+
+<section id="functii" class="wrap">
+  <div class="sec-head reveal">
+    <span class="eyebrow">✨ Ce oferă</span>
+    <h2>Tot ce are nevoie o invitație modernă</h2>
+    <p>Fără hârtii pierdute, fără telefoane de urmărire — invitația ta lucrează singură.</p>
+  </div>
+  <div class="features">
+    <div class="feature reveal">
+      <div class="ico">🎨</div>
+      <h3>Design tematic</h3>
+      <p>Invitație cu temă safari, ilustrații delicate în acuarelă și tipografie elegantă, gândită pentru mobil.</p>
+    </div>
+    <div class="feature reveal" style="transition-delay:.08s">
+      <div class="ico">🔗</div>
+      <h3>Link personalizat</h3>
+      <p>Fiecare eveniment primește adresa lui — <b>momente-dragi.ro/botez-numele-copilului</b> — ușor de trimis oriunde.</p>
+    </div>
+    <div class="feature reveal" style="transition-delay:.16s">
+      <div class="ico">✅</div>
+      <h3>Confirmări online</h3>
+      <p>Invitații răspund direct din invitație: câte persoane vin, la biserică, la petrecere, plus un mesaj drag.</p>
+    </div>
+    <div class="feature reveal" style="transition-delay:.24s">
+      <div class="ico">📊</div>
+      <h3>Statistici în timp real</h3>
+      <p>Familia are pagina ei privată cu toate confirmările, numărul de persoane și mesajele primite.</p>
+    </div>
+  </div>
+</section>
+
+<section id="pasi" class="wrap">
+  <div class="sec-head reveal">
+    <span class="eyebrow">🧭 Cum funcționează</span>
+    <h2>De la idee la invitație, în 3 pași</h2>
+  </div>
+  <div class="steps">
+    <div class="step reveal">
+      <div class="emoji">📝</div>
+      <h3>Se creează invitația</h3>
+      <p>Numele copilului, părinții și nașii, data, biserica și locul petrecerii — invitația prinde viață în câteva minute.</p>
+    </div>
+    <div class="step reveal" style="transition-delay:.1s">
+      <div class="emoji">💌</div>
+      <h3>Trimiți linkul</h3>
+      <p>Primești un link personalizat pe care îl dai mai departe pe WhatsApp, SMS sau oriunde vrei. Fără tipar, fără plicuri.</p>
+    </div>
+    <div class="step reveal" style="transition-delay:.2s">
+      <div class="emoji">🎉</div>
+      <h3>Urmărești confirmările</h3>
+      <p>Vezi în timp real cine vine, câte persoane și ce mesaje v-au lăsat — știi mereu exact câți invitați aștepți.</p>
+    </div>
+  </div>
+</section>
+
+<div class="wrap">
+  <div class="final reveal">
+    <span class="paw paw-1" aria-hidden="true">🐾</span>
+    <span class="paw paw-2" aria-hidden="true">🐾</span>
+    <h2>Pregătit pentru un moment de neuitat?</h2>
+    <p>Vezi cum arată o invitație adevărată și imaginează-ți-o cu numele celui mic.</p>
+    <a class="btn-primary" href="/botez-milan-alexandru">Deschide invitația exemplu 🦁</a>
+  </div>
+</div>
+
+<footer class="wrap">
+  <span>© 2026 Momente Dragi · făcut cu drag 🦁</span>
+  <a href="/admin">Administrare</a>
+</footer>
+
+<script>
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.reveal').forEach((el) => io.observe(el));
+</script>
+</body>
+</html>
