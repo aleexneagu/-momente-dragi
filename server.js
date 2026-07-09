@@ -10,6 +10,7 @@ const PUBLIC_DIR = path.join(__dirname, 'public');
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const RSVP_DIR = path.join(DATA_DIR, 'confirmari');
 const INVITATIONS_FILE = path.join(DATA_DIR, 'invitatii.json');
+const MESSAGES_FILE = path.join(DATA_DIR, 'mesaje.json');
 const TEMPLATE_FILE = path.join(__dirname, 'templates', 'invitatie.html');
 const CONFIRMARI_TEMPLATE_FILE = path.join(__dirname, 'templates', 'confirmari.html');
 
@@ -72,6 +73,9 @@ function findInvitation(slug) {
   if (slug === DEMO_INVITATION.slug) return DEMO_INVITATION;
   return loadInvitations().find((i) => i.slug === slug);
 }
+
+function readMessages() { return readJson(MESSAGES_FILE, []); }
+function writeMessages(list) { fs.writeFileSync(MESSAGES_FILE, JSON.stringify(list, null, 2)); }
 
 function rsvpFile(slug) { return path.join(RSVP_DIR, slug + '.json'); }
 function readRsvps(slug) { return readJson(rsvpFile(slug), []); }
@@ -239,6 +243,26 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
+  // --- API public: mesaj de contact de pe landing ---
+  // POST /api/contact
+  if (req.method === 'POST' && parts[0] === 'api' && parts[1] === 'contact' && parts.length === 2) {
+    try {
+      const data = JSON.parse(await readBody(req));
+      const name = String(data.name || '').trim().slice(0, 120);
+      const contact = String(data.contact || '').trim().slice(0, 160);
+      const message = String(data.message || '').trim().slice(0, 1000);
+      if (!name || !contact || !message) {
+        return sendJson(res, 400, { error: 'Completează numele, datele de contact și mesajul.' });
+      }
+      const messages = readMessages();
+      messages.push({ id: crypto.randomUUID(), name, contact, message, createdAt: new Date().toISOString() });
+      writeMessages(messages);
+      return sendJson(res, 200, { ok: true });
+    } catch {
+      return sendJson(res, 400, { error: 'A apărut o eroare. Încearcă din nou.' });
+    }
+  }
+
   // --- API confirmări (parola master sau parola proprie a invitației) ---
 
   // GET /api/rsvps/:slug — confirmările unei invitații
@@ -317,6 +341,21 @@ const server = http.createServer(async (req, res) => {
       list.splice(idx, 1);
       saveInvitations(list);
       try { fs.unlinkSync(rsvpFile(parts[3])); } catch {}
+      return sendJson(res, 200, { ok: true });
+    }
+
+    // GET /api/admin/messages — mesajele de contact
+    if (req.method === 'GET' && parts[2] === 'messages' && parts.length === 3) {
+      return sendJson(res, 200, { messages: readMessages() });
+    }
+
+    // DELETE /api/admin/messages/:id — șterge un mesaj
+    if (req.method === 'DELETE' && parts[2] === 'messages' && parts.length === 4) {
+      const messages = readMessages();
+      const idx = messages.findIndex((m) => m.id === parts[3]);
+      if (idx === -1) return sendJson(res, 404, { error: 'Mesajul nu a fost găsit' });
+      messages.splice(idx, 1);
+      writeMessages(messages);
       return sendJson(res, 200, { ok: true });
     }
 

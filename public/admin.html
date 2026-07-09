@@ -181,7 +181,28 @@
 
   .foot { display: flex; justify-content: space-between; align-items: center; margin-top: 18px; flex-wrap: wrap; gap: 10px; }
   .link { font-family: inherit; background: none; border: 0; font-size: 14px; color: var(--teal-dark); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
-  #panel, #view-form, #view-rsvps { display: none; }
+  #panel, #view-form, #view-rsvps, #view-msgs { display: none; }
+
+  /* ---------- mesaje de contact ---------- */
+  .msgcard {
+    border: 1px solid var(--line); border-radius: 16px; background: #fff;
+    padding: 14px 16px; margin-bottom: 10px;
+  }
+  .msgcard .m-top { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+  .msgcard .m-name { font-weight: 600; color: var(--ink); }
+  .msgcard .m-when { font-size: 12px; color: var(--muted); }
+  .msgcard .m-contact { font-size: 13px; color: var(--teal-dark); text-decoration: none; }
+  .msgcard .m-contact:hover { text-decoration: underline; }
+  .msgcard .m-text {
+    font-size: 14px; color: var(--ink-soft); line-height: 1.6; margin-top: 8px;
+    background: #f5f2e9; border-radius: 10px; padding: 9px 12px; white-space: pre-wrap;
+  }
+  .msgcard .m-foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; align-items: center; }
+  .msgcard .m-reply {
+    display: inline-block; font-size: 13px; font-weight: 600; color: #fff;
+    background: var(--grad); border-radius: 999px; padding: 8px 15px; text-decoration: none;
+    box-shadow: 0 8px 18px -8px rgba(31, 116, 104, .5);
+  }
 </style>
 </head>
 <body>
@@ -203,7 +224,10 @@
       <div id="view-list">
         <div class="view-head">
           <h2>Invitațiile tale</h2>
-          <button class="btn" id="new-btn">➕ Invitație nouă</button>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="btn-outline" id="msgs-btn">💬 Mesaje</button>
+            <button class="btn" id="new-btn">➕ Invitație nouă</button>
+          </div>
         </div>
         <input type="text" class="list-search" id="inv-search" placeholder="🔍 Caută invitația după nume…">
         <div id="inv-list"></div>
@@ -352,6 +376,19 @@
         </div>
       </div>
 
+      <!-- MESAJE DE CONTACT -->
+      <div id="view-msgs">
+        <div class="view-head">
+          <h2>Mesaje de contact</h2>
+          <button class="btn-outline" id="msgs-back">← Înapoi la invitații</button>
+        </div>
+        <div id="msg-list"></div>
+        <div class="empty" id="msgs-empty" style="display:none">
+          <div class="big">💬</div>
+          Niciun mesaj încă
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -389,7 +426,7 @@
 
   // ---------- navigare între ecrane ----------
   function show(view) {
-    ['view-list', 'view-form', 'view-rsvps'].forEach((v) => { $(v).style.display = v === view ? 'block' : 'none'; });
+    ['view-list', 'view-form', 'view-rsvps', 'view-msgs'].forEach((v) => { $(v).style.display = v === view ? 'block' : 'none'; });
   }
 
   function logout() {
@@ -712,6 +749,91 @@
     } catch (e) { alert(e.message); }
   }
 
+  // ---------- mesaje de contact ----------
+  let messages = [];
+
+  async function loadMessages() {
+    messages = (await api('/api/admin/messages')).messages;
+    $('msgs-btn').textContent = '💬 Mesaje' + (messages.length ? ' (' + messages.length + ')' : '');
+  }
+
+  function replyLink(contact) {
+    if (contact.includes('@')) return 'mailto:' + contact;
+    const phone = contact.replace(/[^\d+]/g, '');
+    return phone.length >= 9 ? 'tel:' + phone : null;
+  }
+
+  function renderMessages() {
+    const box = $('msg-list');
+    box.innerHTML = '';
+    $('msgs-empty').style.display = messages.length ? 'none' : 'block';
+
+    messages.slice().reverse().forEach((m) => {
+      const card = document.createElement('div');
+      card.className = 'msgcard';
+
+      const top = document.createElement('div');
+      top.className = 'm-top';
+      const left = document.createElement('div');
+      const nm = document.createElement('span');
+      nm.className = 'm-name';
+      nm.textContent = m.name;
+      left.appendChild(nm);
+      left.appendChild(document.createTextNode(' · '));
+      const contact = document.createElement('a');
+      contact.className = 'm-contact';
+      contact.textContent = m.contact;
+      const href = replyLink(m.contact);
+      if (href) contact.href = href;
+      left.appendChild(contact);
+      const when = document.createElement('span');
+      when.className = 'm-when';
+      when.textContent = new Date(m.createdAt).toLocaleString('ro-RO', { dateStyle: 'short', timeStyle: 'short' });
+      top.append(left, when);
+
+      const text = document.createElement('div');
+      text.className = 'm-text';
+      text.textContent = m.message;
+
+      const foot = document.createElement('div');
+      foot.className = 'm-foot';
+      if (href) {
+        const reply = document.createElement('a');
+        reply.className = 'm-reply';
+        reply.href = href;
+        reply.textContent = href.startsWith('mailto:') ? '↩️ Răspunde pe e-mail' : '📞 Sună';
+        foot.appendChild(reply);
+      }
+      const del = document.createElement('button');
+      del.className = 'del';
+      del.textContent = '✕';
+      del.title = 'Șterge mesajul';
+      del.setAttribute('aria-label', 'Șterge mesajul de la ' + m.name);
+      del.addEventListener('click', async () => {
+        if (!confirm('Sigur ștergi mesajul de la „' + m.name + '"?')) return;
+        try {
+          await api('/api/admin/messages/' + encodeURIComponent(m.id), { method: 'DELETE' });
+          messages = messages.filter((x) => x.id !== m.id);
+          $('msgs-btn').textContent = '💬 Mesaje' + (messages.length ? ' (' + messages.length + ')' : '');
+          renderMessages();
+        } catch { alert('Nu am putut șterge mesajul. Încearcă din nou.'); }
+      });
+      foot.appendChild(del);
+
+      card.append(top, text, foot);
+      box.appendChild(card);
+    });
+  }
+
+  $('msgs-btn').addEventListener('click', async () => {
+    try {
+      await loadMessages();
+      renderMessages();
+      show('view-msgs');
+    } catch (e) { alert(e.message); }
+  });
+  $('msgs-back').addEventListener('click', () => refreshList().catch(() => {}));
+
   $('rsvps-back').addEventListener('click', () => refreshList().catch(() => {}));
   $('new-btn').addEventListener('click', () => openForm(null));
   $('logout-btn').addEventListener('click', logout);
@@ -740,6 +862,7 @@
     await refreshList();
     $('login').style.display = 'none';
     $('panel').style.display = 'block';
+    loadMessages().catch(() => {});
   }
 
   async function tryLogin() {
