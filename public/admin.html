@@ -4,60 +4,67 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dashboard — Momente Dragi</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦁</text></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600&family=Caveat:wght@700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Caveat:wght@700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --sand: #f8f3e8; --sand-2: #efe8d6; --card: #fffcf4; --line: #e3d4b6;
-    --ink: #4a3c2e; --ink-2: #5a4a3a; --muted: #8a7a66; --accent: #8b7355;
-    --green: #6f7d43; --green-dark: #5c6836; --red: #b05a3f;
+    --bg: #fdf9f4; --ink: #27343a; --ink-soft: #566670; --muted: #8b9aa0;
+    --teal: #2a9d8f; --teal-dark: #1f7468; --blue: #2e7fa3; --peach: #f0a05a;
+    --card: #fffdfa; --line: #e9e2d6; --red: #b04a2f;
+    --grad: linear-gradient(135deg, #2fa08f, #2e7fa3);
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
-    font-family: 'Lora', Georgia, serif;
-    color: var(--ink-2);
+    font-family: 'Inter', system-ui, sans-serif;
+    color: var(--ink);
     background:
-      radial-gradient(700px 500px at 12% 8%, rgba(125, 143, 111, .20), transparent 70%),
-      radial-gradient(600px 450px at 92% 28%, rgba(196, 169, 125, .18), transparent 70%),
-      linear-gradient(180deg, var(--sand) 0%, var(--sand-2) 100%);
+      radial-gradient(640px 480px at 88% -6%, rgba(42, 157, 143, .14), transparent 65%),
+      radial-gradient(760px 560px at -8% 24%, rgba(46, 127, 163, .12), transparent 65%),
+      radial-gradient(640px 540px at 55% 108%, rgba(240, 160, 90, .12), transparent 65%),
+      linear-gradient(180deg, #fefbf8 0%, #faf3ef 100%);
     min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
   }
   .page { max-width: 760px; margin: 0 auto; padding: 28px 16px 48px; }
   .card {
-    background: rgba(255, 252, 244, .95);
+    background: var(--card);
     border: 1px solid var(--line);
-    border-radius: 22px;
-    box-shadow: 0 18px 50px -22px rgba(90,70,40,.35);
+    border-radius: 24px;
+    box-shadow: 0 18px 50px -22px rgba(40, 62, 68, .3);
     padding: 26px 20px;
   }
-  h1 { font-family: 'Caveat', cursive; font-size: 38px; color: var(--ink); text-align: center; }
+  h1 { font-family: 'Caveat', cursive; font-size: 40px; font-weight: 700; color: var(--ink); text-align: center; }
+  h1 span { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
   .sub { text-align: center; font-size: 12px; color: var(--muted); letter-spacing: .2em; text-transform: uppercase; margin: 2px 0 22px; }
 
   /* ---------- inputs ---------- */
   input, select, textarea {
     width: 100%; font-family: inherit; font-size: 15px; color: var(--ink);
-    background: #fffdf7; border: 1.5px solid var(--line); border-radius: 12px;
+    background: #fff; border: 1.5px solid var(--line); border-radius: 12px;
     padding: 11px 13px; outline: none;
   }
   textarea { resize: vertical; min-height: 70px; }
-  input:focus, select:focus, textarea:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(111,125,67,.18); }
+  input:focus, select:focus, textarea:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(42, 157, 143, .16); }
   .btn {
     font-family: inherit; font-size: 15px; font-weight: 600; color: #fff;
-    background: linear-gradient(180deg, var(--green), var(--green-dark));
+    background: var(--grad);
     border: 0; border-radius: 12px; padding: 12px 18px; cursor: pointer;
+    box-shadow: 0 10px 22px -10px rgba(31, 116, 104, .5);
+    transition: transform .15s, filter .15s;
   }
+  .btn:hover { transform: translateY(-1px); filter: brightness(1.04); }
   .btn.full { width: 100%; }
   .btn-outline {
-    font-family: inherit; font-size: 14px; color: var(--ink-2);
-    background: #fffdf7; border: 1.5px solid var(--line); border-radius: 12px;
+    font-family: inherit; font-size: 14px; color: var(--ink-soft);
+    background: #fff; border: 1.5px solid var(--line); border-radius: 12px;
     padding: 10px 16px; cursor: pointer; transition: all .15s;
   }
-  .btn-outline:hover { border-color: var(--green); color: var(--green-dark); }
-  .btn-outline.danger { color: var(--red); border-color: #e5c4b5; }
+  .btn-outline:hover { border-color: var(--teal); color: var(--teal-dark); }
+  .btn-outline.danger { color: var(--red); border-color: #ecd0c2; }
   .btn-outline.danger:hover { background: var(--red); border-color: var(--red); color: #fff; }
-  .err { display: none; color: #8c4a2f; background: #fbeae4; border: 1px solid #e5b8a5; border-radius: 10px; padding: 10px 12px; font-size: 14px; margin-bottom: 12px; }
+  .err { display: none; color: #9c3f22; background: #fbeee6; border: 1px solid #eccab4; border-radius: 10px; padding: 10px 12px; font-size: 14px; margin-bottom: 12px; }
   .err.show { display: block; }
 
   #login { max-width: 340px; margin: 0 auto; }
@@ -65,36 +72,38 @@
 
   /* ---------- lista invitații ---------- */
   .view-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
-  .view-head h2 { font-family: 'Caveat', cursive; font-size: 28px; color: var(--ink); font-weight: 700; }
+  .view-head h2 { font-family: 'Caveat', cursive; font-size: 29px; color: var(--ink); font-weight: 700; }
 
   .inv {
-    border: 1px solid var(--line); border-radius: 16px; background: #fffdf7;
+    border: 1px solid var(--line); border-radius: 18px; background: #fff;
     padding: 16px; margin-bottom: 12px;
+    transition: box-shadow .2s;
   }
+  .inv:hover { box-shadow: 0 14px 30px -18px rgba(40, 62, 68, .35); }
   .inv-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
   .inv-name { font-family: 'Caveat', cursive; font-size: 27px; color: var(--ink); font-weight: 700; }
   .inv-date { font-size: 13px; color: var(--muted); }
   .inv-link { display: flex; align-items: center; gap: 8px; margin: 10px 0 12px; flex-wrap: wrap; }
   .inv-link code {
-    background: #f6eedb; border-radius: 8px; padding: 5px 9px;
-    font-size: 13px; color: var(--ink-2); word-break: break-all;
+    background: rgba(46, 127, 163, .08); border-radius: 8px; padding: 5px 9px;
+    font-size: 13px; color: var(--ink-soft); word-break: break-all;
   }
   .mini {
-    font-family: inherit; font-size: 12.5px; color: var(--ink-2);
-    background: #fffdf7; border: 1.5px solid var(--line); border-radius: 999px;
+    font-family: inherit; font-size: 12.5px; color: var(--ink-soft);
+    background: #fff; border: 1.5px solid var(--line); border-radius: 999px;
     padding: 5px 11px; cursor: pointer; text-decoration: none; transition: all .15s;
   }
-  .mini:hover { border-color: var(--green); color: var(--green-dark); }
+  .mini:hover { border-color: var(--teal); color: var(--teal-dark); }
   .inv-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
   /* ---------- formular invitație ---------- */
   .fgrid { display: grid; gap: 14px; }
   .fgrid .two { display: grid; gap: 14px; }
   @media (min-width: 560px) { .fgrid .two { grid-template-columns: 1fr 1fr; } }
-  .fgrid label { display: block; font-size: 13px; font-weight: 600; color: var(--ink-2); margin-bottom: 6px; }
+  .fgrid label { display: block; font-size: 13px; font-weight: 600; color: var(--ink-soft); margin-bottom: 6px; }
   .fgrid label small { font-weight: 400; color: var(--muted); }
   .fset { border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
-  .fset legend { font-size: 12px; letter-spacing: .15em; text-transform: uppercase; color: var(--accent); font-weight: 600; padding: 0 6px; }
+  .fset legend { font-size: 12px; letter-spacing: .15em; text-transform: uppercase; color: var(--teal-dark); font-weight: 600; padding: 0 6px; }
   .form-foot { display: flex; gap: 10px; margin-top: 4px; }
   .form-foot .btn { flex: 1; }
 
@@ -103,7 +112,7 @@
   @media (min-width: 560px) { .stats { grid-template-columns: repeat(4, 1fr); } }
   .stat {
     border: 1px solid var(--line); border-radius: 16px; padding: 14px 8px 12px;
-    text-align: center; background: linear-gradient(180deg, #faf4e6, #f2ead5);
+    text-align: center; background: linear-gradient(180deg, #fff, #f6f4ec);
   }
   .stat .ico { font-size: 22px; }
   .stat b { display: block; font-size: 26px; color: var(--ink); line-height: 1.2; }
@@ -113,35 +122,35 @@
   .toolbar .search { flex: 1 1 160px; width: auto; padding: 9px 13px; font-size: 14px; border-radius: 999px; }
   .chips { display: flex; gap: 6px; flex-wrap: wrap; }
   .chip {
-    font-family: inherit; font-size: 13.5px; color: var(--ink-2);
-    background: #fffdf7; border: 1.5px solid var(--line); border-radius: 999px;
+    font-family: inherit; font-size: 13.5px; color: var(--ink-soft);
+    background: #fff; border: 1.5px solid var(--line); border-radius: 999px;
     padding: 8px 14px; cursor: pointer; transition: all .15s;
   }
-  .chip[aria-pressed="true"] { background: var(--green); border-color: var(--green); color: #fff; font-weight: 600; }
+  .chip[aria-pressed="true"] { background: var(--teal); border-color: var(--teal); color: #fff; font-weight: 600; }
 
-  .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 16px; background: #fffdf7; }
+  .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 16px; background: #fff; }
   table { width: 100%; border-collapse: collapse; font-size: 14.5px; min-width: 430px; }
   th {
     text-align: left; font-size: 11px; letter-spacing: .12em; text-transform: uppercase;
     color: var(--muted); font-weight: 600; padding: 12px 12px 10px;
-    border-bottom: 1.5px solid var(--line); background: #f8f1e0;
+    border-bottom: 1.5px solid var(--line); background: #f7f4ec;
     white-space: nowrap;
   }
   th.c, td.c { text-align: center; }
-  td { padding: 12px; border-bottom: 1px solid #efe6d2; vertical-align: top; }
+  td { padding: 12px; border-bottom: 1px solid #f0ebdf; vertical-align: top; }
   tr:last-child td { border-bottom: 0; }
   tbody tr { transition: background .15s; }
-  tbody tr:hover { background: #faf4e4; }
+  tbody tr:hover { background: #f8f5ed; }
   .name { font-weight: 600; color: var(--ink); }
   .when { font-size: 12px; color: var(--muted); margin-top: 2px; }
-  .msg { font-size: 13px; color: var(--ink-2); font-style: italic; margin-top: 6px; background: #f6eedb; border-radius: 8px; padding: 6px 10px; max-width: 380px; }
+  .msg { font-size: 13px; color: var(--ink-soft); font-style: italic; margin-top: 6px; background: #f5f2e9; border-radius: 8px; padding: 6px 10px; max-width: 380px; }
   .pill { display: inline-block; font-size: 12.5px; font-weight: 600; border-radius: 999px; padding: 4px 10px; white-space: nowrap; }
-  .pill.yes { background: #e7ecd9; color: var(--green-dark); }
-  .pill.no { background: #f6e3da; color: var(--red); }
-  .persons-badge { display: inline-block; min-width: 28px; font-weight: 600; color: var(--ink); background: #efe3c8; border-radius: 999px; padding: 4px 8px; font-size: 13.5px; }
+  .pill.yes { background: rgba(42, 157, 143, .15); color: var(--teal-dark); }
+  .pill.no { background: rgba(176, 74, 47, .12); color: var(--red); }
+  .persons-badge { display: inline-block; min-width: 28px; font-weight: 600; color: var(--ink); background: rgba(46, 127, 163, .12); border-radius: 999px; padding: 4px 8px; font-size: 13.5px; }
   .del {
     font-family: inherit; width: 30px; height: 30px; border-radius: 999px;
-    border: 1.5px solid #e5c4b5; background: #fdf3ee; color: var(--red);
+    border: 1.5px solid #ecd0c2; background: #fdf3ec; color: var(--red);
     font-size: 15px; line-height: 1; cursor: pointer; transition: all .15s;
   }
   .del:hover { background: var(--red); border-color: var(--red); color: #fff; }
@@ -150,14 +159,14 @@
   .empty .big { font-size: 40px; margin-bottom: 8px; font-style: normal; }
 
   .foot { display: flex; justify-content: space-between; align-items: center; margin-top: 18px; flex-wrap: wrap; gap: 10px; }
-  .link { font-family: inherit; background: none; border: 0; font-size: 14px; color: var(--green-dark); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+  .link { font-family: inherit; background: none; border: 0; font-size: 14px; color: var(--teal-dark); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
   #panel, #view-form, #view-rsvps { display: none; }
 </style>
 </head>
 <body>
 <div class="page">
   <div class="card">
-    <h1>✨ Momente Dragi</h1>
+    <h1>Momente <span>Dragi</span> ✨</h1>
     <p class="sub">Dashboard invitații</p>
 
     <!-- LOGIN -->
