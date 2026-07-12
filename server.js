@@ -6,6 +6,11 @@ const crypto = require('crypto');
 const PORT = process.env.PORT || 3000;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'milan2026';
 
+// notificări pe email la mesaje noi de contact (opțional — active doar dacă ambele sunt setate)
+const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
+const NOTIFY_EMAIL = process.env.NOTIFY_EMAIL || '';
+const NOTIFY_FROM = process.env.NOTIFY_FROM || 'onboarding@resend.dev';
+
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const RSVP_DIR = path.join(DATA_DIR, 'confirmari');
@@ -80,6 +85,39 @@ function writeMessages(list) { fs.writeFileSync(MESSAGES_FILE, JSON.stringify(li
 function rsvpFile(slug) { return path.join(RSVP_DIR, slug + '.json'); }
 function readRsvps(slug) { return readJson(rsvpFile(slug), []); }
 function writeRsvps(slug, rsvps) { fs.writeFileSync(rsvpFile(slug), JSON.stringify(rsvps, null, 2)); }
+
+// ---------- notificări email ----------
+
+// fire-and-forget: nu blochează răspunsul către vizitator, iar o eroare de email
+// nu afectează salvarea mesajului
+function notifyNewContactMessage(msg) {
+  if (!RESEND_API_KEY || !NOTIFY_EMAIL || typeof fetch !== 'function') return;
+  const html = `
+    <div style="font-family:sans-serif;max-width:520px">
+      <h2 style="margin:0 0 12px">Mesaj nou pe momente-dragi.ro</h2>
+      <p><strong>Nume:</strong> ${escapeHtml(msg.name)}</p>
+      <p><strong>Contact:</strong> ${escapeHtml(msg.contact)}</p>
+      <p style="white-space:pre-wrap;background:#f6f6f6;border-radius:8px;padding:12px">${escapeHtml(msg.message)}</p>
+      <p style="color:#888;font-size:13px">Poți răspunde și din secțiunea Mesaje a dashboardului de admin.</p>
+    </div>`;
+  fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer ' + RESEND_API_KEY,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      from: NOTIFY_FROM,
+      to: [NOTIFY_EMAIL],
+      subject: 'Mesaj nou de la ' + msg.name,
+      html
+    })
+  }).then(async (r) => {
+    if (!r.ok) console.error('Notificare email eșuată:', r.status, await r.text().catch(() => ''));
+  }).catch((err) => {
+    console.error('Notificare email eșuată:', err.message);
+  });
+}
 
 // ---------- randare invitație ----------
 
@@ -255,8 +293,10 @@ const server = http.createServer(async (req, res) => {
         return sendJson(res, 400, { error: 'Completează numele, datele de contact și mesajul.' });
       }
       const messages = readMessages();
-      messages.push({ id: crypto.randomUUID(), name, contact, message, createdAt: new Date().toISOString() });
+      const msg = { id: crypto.randomUUID(), name, contact, message, createdAt: new Date().toISOString() };
+      messages.push(msg);
       writeMessages(messages);
+      notifyNewContactMessage(msg);
       return sendJson(res, 200, { ok: true });
     } catch {
       return sendJson(res, 400, { error: 'A apărut o eroare. Încearcă din nou.' });
