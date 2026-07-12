@@ -125,6 +125,18 @@
   .fgrid label small { font-weight: 400; color: var(--muted); }
   .fset { border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
   .fset legend { font-size: 12px; letter-spacing: .15em; text-transform: uppercase; color: var(--teal-dark); font-weight: 600; padding: 0 6px; }
+
+  .inv-pachet { display: inline-block; font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; border-radius: 999px; padding: 2px 8px; margin-left: 6px; vertical-align: 1px; }
+  .inv-pachet.simplu { background: #eef0ef; color: #6a7570; }
+  .inv-pachet.complet { background: rgba(42, 157, 143, .14); color: var(--teal-dark); }
+  .inv-pachet.premium { background: rgba(240, 160, 90, .2); color: #a3641f; }
+
+  .foto-hint { font-size: 13px; color: var(--muted); margin-bottom: 10px; }
+  .foto-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; margin-bottom: 12px; }
+  .foto-grid .ph { position: relative; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); }
+  .foto-grid img { display: block; width: 100%; height: 96px; object-fit: cover; }
+  .foto-grid .rm { position: absolute; top: 6px; right: 6px; width: 24px; height: 24px; border-radius: 999px; border: 0; background: rgba(0, 0, 0, .55); color: #fff; cursor: pointer; font-size: 13px; line-height: 1; }
+  .foto-grid .rm:hover { background: var(--red); }
   .form-foot { display: flex; gap: 10px; margin-top: 4px; }
   .form-foot .btn { flex: 1; }
 
@@ -326,6 +338,21 @@
             <label for="i-parola">Parolă pentru familie <small>— opțional; dă acces doar la confirmările acestei invitații, pe pagina /slug/admin</small></label>
             <input type="text" id="i-parola" placeholder="ex: familia-sofia-2026" autocomplete="off">
           </div>
+          <div>
+            <label for="i-pachet">Pachet <small>— stabilește funcțiile invitației</small></label>
+            <select id="i-pachet">
+              <option value="simplu">Simplu — invitație + confirmări</option>
+              <option value="complet">Complet — + galerie foto</option>
+              <option value="premium">Premium — + statistici și export listă invitați</option>
+            </select>
+          </div>
+          <fieldset class="fset" id="foto-set" style="display:none">
+            <legend>📸 Galerie foto</legend>
+            <p class="foto-hint" id="foto-hint">Maxim 6 fotografii — apar pe invitație în secțiunea „Galeria noastră". Pozele se redimensionează automat.</p>
+            <div class="foto-grid" id="foto-grid"></div>
+            <input type="file" id="foto-input" accept="image/jpeg,image/png,image/webp" multiple style="display:none">
+            <button class="btn-outline" id="foto-add" type="button">➕ Adaugă fotografii</button>
+          </fieldset>
           <div class="form-foot">
             <button class="btn-outline" id="form-cancel">Renunță</button>
             <button class="btn" id="form-save">Salvează invitația</button>
@@ -405,6 +432,7 @@
   let invitations = [];
   let invQuery = '';        // căutare în lista de invitații
   let editingSlug = null;   // null = creare, altfel slug-ul editat
+  let editingInv = null;    // obiectul invitației editate (pentru galerie foto)
   let slugTouched = false;  // true dacă adminul a modificat manual slug-ul
   let currentSlug = null;   // invitația ale cărei confirmări sunt afișate
   let allRsvps = [];
@@ -475,6 +503,11 @@
       const dt = document.createElement('div');
       dt.className = 'inv-date';
       dt.textContent = '📅 ' + formatDate(inv.data);
+      const pk = document.createElement('span');
+      const pachet = ['simplu', 'complet', 'premium'].includes(inv.pachet) ? inv.pachet : 'simplu';
+      pk.className = 'inv-pachet ' + pachet;
+      pk.textContent = pachet;
+      dt.append(' ', pk);
       info.append(nm, dt);
       const count = document.createElement('button');
       count.className = 'inv-count';
@@ -589,6 +622,7 @@
 
   function openForm(inv) {
     editingSlug = inv ? inv.slug : null;
+    editingInv = inv;
     slugTouched = !!inv;
     $('form-title').textContent = inv ? 'Editează: ' + inv.nume : 'Invitație nouă';
     $('form-err').classList.remove('show');
@@ -609,8 +643,96 @@
     $('i-mesaj').value = inv ? inv.mesajSafari : DEFAULT_MESAJ;
     $('i-footer').value = inv ? inv.footerText : '';
     $('i-parola').value = inv ? (inv.parolaAdmin || '') : '';
+    $('i-pachet').value = inv && ['simplu', 'complet', 'premium'].includes(inv.pachet) ? inv.pachet : 'simplu';
+    updateFotoSection();
     show('view-form');
   }
+
+  // ---------- galerie foto (pachet Complet / Premium) ----------
+  function updateFotoSection() {
+    const areGalerie = $('i-pachet').value !== 'simplu';
+    $('foto-set').style.display = areGalerie ? 'block' : 'none';
+    if (!areGalerie) return;
+    if (!editingSlug) {
+      $('foto-hint').textContent = 'Salvează întâi invitația, apoi revino la Editează ca să adaugi fotografiile.';
+      $('foto-add').style.display = 'none';
+      $('foto-grid').innerHTML = '';
+      return;
+    }
+    $('foto-hint').textContent = 'Maxim 6 fotografii — apar pe invitație în secțiunea „Galeria noastră". Pozele se redimensionează automat.';
+    $('foto-add').style.display = 'inline-block';
+    renderFotoGrid();
+  }
+
+  function renderFotoGrid() {
+    const grid = $('foto-grid');
+    grid.innerHTML = '';
+    ((editingInv && editingInv.fotografii) || []).forEach((file) => {
+      const ph = document.createElement('div');
+      ph.className = 'ph';
+      const img = document.createElement('img');
+      img.src = '/uploads/' + encodeURIComponent(file);
+      img.alt = '';
+      const rm = document.createElement('button');
+      rm.className = 'rm';
+      rm.type = 'button';
+      rm.textContent = '✕';
+      rm.title = 'Șterge fotografia';
+      rm.addEventListener('click', async () => {
+        if (!confirm('Ștergi această fotografie?')) return;
+        try {
+          const r = await api('/api/admin/invitations/' + encodeURIComponent(editingSlug) + '/photos/' + encodeURIComponent(file), { method: 'DELETE' });
+          editingInv.fotografii = r.fotografii;
+          renderFotoGrid();
+        } catch (e) { alert(e.message); }
+      });
+      ph.append(img, rm);
+      grid.appendChild(ph);
+    });
+  }
+
+  // redimensionează în browser (max 1600px, JPEG) ca uploadul să fie mic și rapid
+  function resizeToDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const scale = Math.min(1, 1600 / Math.max(img.width, img.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/jpeg', 0.85));
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Fișierul nu este o imagine validă.')); };
+      img.src = url;
+    });
+  }
+
+  $('i-pachet').addEventListener('change', updateFotoSection);
+  $('foto-add').addEventListener('click', () => $('foto-input').click());
+  $('foto-input').addEventListener('change', async (e) => {
+    const files = [...e.target.files];
+    e.target.value = '';
+    if (!files.length || !editingSlug) return;
+    const existente = (editingInv.fotografii || []).length;
+    if (existente + files.length > 6) { alert('Maxim 6 fotografii per invitație (ai deja ' + existente + ').'); return; }
+    $('foto-add').disabled = true;
+    $('foto-add').textContent = '⏳ Se încarcă…';
+    try {
+      const images = [];
+      for (const f of files) images.push(await resizeToDataUrl(f));
+      const r = await api('/api/admin/invitations/' + encodeURIComponent(editingSlug) + '/photos', {
+        method: 'POST',
+        body: JSON.stringify({ images })
+      });
+      editingInv.fotografii = r.fotografii;
+      renderFotoGrid();
+    } catch (err) { alert(err.message); }
+    $('foto-add').disabled = false;
+    $('foto-add').textContent = '➕ Adaugă fotografii';
+  });
 
   $('i-nume').addEventListener('input', () => {
     if (!editingSlug && !slugTouched) $('i-slug').value = slugify($('i-nume').value);
@@ -638,7 +760,8 @@
       introText: $('i-intro').value.trim(),
       mesajSafari: $('i-mesaj').value.trim(),
       footerText: $('i-footer').value.trim(),
-      parolaAdmin: $('i-parola').value.trim()
+      parolaAdmin: $('i-parola').value.trim(),
+      pachet: $('i-pachet').value
     };
     try {
       if (editingSlug) {

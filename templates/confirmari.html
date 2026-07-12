@@ -130,6 +130,7 @@
         <div class="stat"><div class="ico">👥</div><b id="st-persons">0</b><small>Persoane</small></div>
         <div class="stat"><div class="ico">🕊️</div><b id="st-church">0</b><small>La biserică</small></div>
         <div class="stat"><div class="ico">🦜</div><b id="st-party">0</b><small>La petrecere</small></div>
+        <div class="stat" id="st-views-box" style="display:none"><div class="ico">👁️</div><b id="st-views">0</b><small>Vizualizări</small></div>
       </div>
 
       <div class="toolbar">
@@ -139,6 +140,7 @@
           <button class="chip" data-filter="church" aria-pressed="false">🕊️ Biserică</button>
           <button class="chip" data-filter="party" aria-pressed="false">🦜 Petrecere</button>
         </div>
+        <button class="chip" id="export-btn" style="display:none" title="Descarcă lista invitaților (Excel/CSV)">⬇️ Exportă lista</button>
       </div>
 
       <div class="table-wrap">
@@ -273,7 +275,14 @@
   async function load(password) {
     const res = await fetch('/api/rsvps/' + encodeURIComponent(SLUG), { headers: { 'x-admin-password': password } });
     if (!res.ok) throw new Error();
-    allRsvps = (await res.json()).rsvps;
+    const data = await res.json();
+    allRsvps = data.rsvps;
+    // funcțiile pachetului Premium: contorul de vizualizări și exportul listei
+    if (data.pachet === 'premium') {
+      document.getElementById('st-views-box').style.display = 'block';
+      document.getElementById('st-views').textContent = data.views || 0;
+      document.getElementById('export-btn').style.display = 'inline-block';
+    }
     sessionStorage.setItem(PW_KEY, password);
     updateStats();
     render();
@@ -311,6 +320,22 @@
   document.getElementById('search').addEventListener('input', (e) => {
     query = e.target.value.trim().toLowerCase();
     render();
+  });
+
+  // export CSV (pachet Premium) — cu BOM ca Excel să afișeze corect diacriticele
+  document.getElementById('export-btn').addEventListener('click', () => {
+    const esc = (v) => '"' + String(v ?? '').replaceAll('"', '""') + '"';
+    const rows = [['Nume', 'Persoane', 'Biserică', 'Petrecere', 'Mesaj', 'Data confirmării']];
+    allRsvps.forEach((r) => rows.push([
+      r.name, r.persons || 1, r.church ? 'Da' : 'Nu', r.party ? 'Da' : 'Nu',
+      r.message || '', r.createdAt ? new Date(r.createdAt).toLocaleString('ro-RO') : ''
+    ]));
+    const csv = '\uFEFF' + rows.map((row) => row.map(esc).join(';')).join('\r\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    a.download = 'confirmari-' + SLUG + '.csv';
+    a.click();
+    URL.revokeObjectURL(a.href);
   });
 
   const saved = sessionStorage.getItem(PW_KEY);

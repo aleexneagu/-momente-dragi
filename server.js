@@ -14,12 +14,15 @@ const NOTIFY_FROM = process.env.NOTIFY_FROM || 'onboarding@resend.dev';
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const RSVP_DIR = path.join(DATA_DIR, 'confirmari');
+const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
 const INVITATIONS_FILE = path.join(DATA_DIR, 'invitatii.json');
 const MESSAGES_FILE = path.join(DATA_DIR, 'mesaje.json');
+const VIEWS_FILE = path.join(DATA_DIR, 'views.json');
 const TEMPLATE_FILE = path.join(__dirname, 'templates', 'invitatie.html');
 const CONFIRMARI_TEMPLATE_FILE = path.join(__dirname, 'templates', 'confirmari.html');
 
 if (!fs.existsSync(RSVP_DIR)) fs.mkdirSync(RSVP_DIR, { recursive: true });
+if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 if (!fs.existsSync(INVITATIONS_FILE)) {
   // volum nou și gol → pornește cu invitațiile din repo, dacă există
   const seed = path.join(__dirname, 'data', 'invitatii.json');
@@ -45,7 +48,11 @@ const RO_LUNI = ['Ianuarie', 'Februarie', 'Martie', 'Aprilie', 'Mai', 'Iunie',
   'Iulie', 'August', 'Septembrie', 'Octombrie', 'Noiembrie', 'Decembrie'];
 
 // slug-uri care nu pot fi folosite de invitații (căi rezervate)
-const RESERVED_SLUGS = ['admin', 'api', 'templates', 'data', 'public', 'demo'];
+const RESERVED_SLUGS = ['admin', 'api', 'templates', 'data', 'public', 'demo', 'uploads'];
+
+// pachetele comerciale — decid ce funcții primește invitația
+const PACHETE = ['simplu', 'complet', 'premium'];
+const MAX_FOTOGRAFII = 6;
 const SLUG_RE = /^[a-z0-9][a-z0-9-]{1,79}$/;
 
 // invitație demonstrativă cu date fictive — arătată vizitatorilor de pe landing la /demo
@@ -57,6 +64,7 @@ const DEMO_INVITATION = {
   data: '2026-10-17',
   biserica: { nume: 'Biserica Sfânta Maria', adresa: 'Strada Exemplu 10, București', ora: '15:00' },
   petrecere: { nume: 'Salon Panoramic', adresa: 'Strada Exemplu 22, București', ora: '19:00' },
+  pachet: 'premium',
   introText: 'Micuța noastră face primul pas într-o aventură plină de iubire și binecuvântare, iar noi ne-am bucura enorm să fiți alături de noi la Sfântul Botez.',
   mesajSafari: 'Pregătește-ți zâmbetul și spiritul de aventură! Leul, girafa, elefantul, zebra și toate animăluțele din safari abia așteaptă să sărbătorim împreună o zi plină de voie bună și amintiri frumoase. Vă așteptăm cu drag!',
   footerText: 'Cu drag, familia Sofiei 🦁 (invitație demonstrativă)'
@@ -81,6 +89,18 @@ function findInvitation(slug) {
 
 function readMessages() { return readJson(MESSAGES_FILE, []); }
 function writeMessages(list) { fs.writeFileSync(MESSAGES_FILE, JSON.stringify(list, null, 2)); }
+
+function readViews() { return readJson(VIEWS_FILE, {}); }
+function countView(slug) {
+  const views = readViews();
+  views[slug] = (views[slug] || 0) + 1;
+  try { fs.writeFileSync(VIEWS_FILE, JSON.stringify(views, null, 2)); } catch {}
+}
+
+// pachetul decide funcțiile: galeria foto de la „complet", statisticile de la „premium"
+function pachetOf(inv) { return PACHETE.includes(inv.pachet) ? inv.pachet : 'simplu'; }
+function areGalerie(inv) { return pachetOf(inv) !== 'simplu'; }
+function areStatistici(inv) { return pachetOf(inv) === 'premium'; }
 
 function rsvpFile(slug) { return path.join(RSVP_DIR, slug + '.json'); }
 function readRsvps(slug) { return readJson(rsvpFile(slug), []); }
@@ -159,7 +179,31 @@ function renderInvitation(inv) {
     mesajSafari: inv.mesajSafari,
     footerText: inv.footerText
   };
-  return template.replace(/{{(\w+)}}/g, (_, key) => escapeHtml(vars[key] ?? ''));
+  // blocuri opționale de HTML (nescăpate) — {{{cheie}}} se înlocuiește înaintea {{cheie}}
+  const raw = { galerieBlock: areGalerie(inv) ? galerieHtml(inv) : '' };
+  return template
+    .replace(/{{{(\w+)}}}/g, (_, key) => raw[key] ?? '')
+    .replace(/{{(\w+)}}/g, (_, key) => escapeHtml(vars[key] ?? ''));
+}
+
+// secțiunea de galerie foto — doar pentru pachetele Complet și Premium
+function galerieHtml(inv) {
+  const poze = Array.isArray(inv.fotografii) ? inv.fotografii : [];
+  if (!poze.length) return '';
+  const imgs = poze.map((f) =>
+    `<a href="/uploads/${escapeHtml(f)}" target="_blank" rel="noopener"><img src="/uploads/${escapeHtml(f)}" loading="lazy" alt="Fotografie din galerie"></a>`
+  ).join('');
+  return `
+    <section class="section" aria-label="Galerie foto">
+      <p class="section-label">Galeria noastră</p>
+      <style>
+        .galerie { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+        .galerie a { display: block; border-radius: 14px; overflow: hidden; border: 1px solid var(--line); }
+        .galerie img { display: block; width: 100%; height: 140px; object-fit: cover; transition: transform .25s; }
+        .galerie a:hover img { transform: scale(1.04); }
+      </style>
+      <div class="galerie">${imgs}</div>
+    </section>`;
 }
 
 function renderConfirmari(inv) {
@@ -188,7 +232,8 @@ function sanitizeInvitation(data) {
     introText: s(data.introText, 1000),
     mesajSafari: s(data.mesajSafari, 1000),
     footerText: s(data.footerText, 200),
-    parolaAdmin: s(data.parolaAdmin, 60) // opțional — acces la /slug/admin pentru familie
+    parolaAdmin: s(data.parolaAdmin, 60), // opțional — acces la /slug/admin pentru familie
+    pachet: PACHETE.includes(data.pachet) ? data.pachet : 'simplu'
   };
 
   if (!SLUG_RE.test(inv.slug)) return { error: 'Slug invalid — folosește doar litere mici, cifre și cratime.' };
@@ -227,12 +272,12 @@ function canManageRsvps(req, inv) {
   return !!(inv && inv.parolaAdmin && req.headers['x-admin-password'] === inv.parolaAdmin);
 }
 
-function readBody(req) {
+function readBody(req, maxSize = 100_000) {
   return new Promise((resolve, reject) => {
     let body = '';
     req.on('data', (chunk) => {
       body += chunk;
-      if (body.length > 100_000) {
+      if (body.length > maxSize) {
         reject(new Error('body too large'));
         req.destroy();
       }
@@ -310,7 +355,11 @@ const server = http.createServer(async (req, res) => {
     const inv = findInvitation(parts[2]);
     if (!inv) return sendJson(res, 404, { error: 'Invitația nu există' });
     if (!canManageRsvps(req, inv)) return sendJson(res, 401, { error: 'Parolă incorectă' });
-    return sendJson(res, 200, { rsvps: readRsvps(parts[2]) });
+    return sendJson(res, 200, {
+      rsvps: readRsvps(parts[2]),
+      pachet: pachetOf(inv),
+      views: areStatistici(inv) ? (readViews()[inv.slug] || 0) : null
+    });
   }
 
   // DELETE /api/rsvp/:slug/:id — șterge o confirmare
@@ -346,6 +395,7 @@ const server = http.createServer(async (req, res) => {
           return sendJson(res, 409, { error: 'Există deja o invitație cu acest slug.' });
         }
         inv.createdAt = new Date().toISOString();
+        inv.fotografii = [];
         list.push(inv);
         saveInvitations(list);
         return sendJson(res, 200, { ok: true, invitation: inv });
@@ -365,6 +415,7 @@ const server = http.createServer(async (req, res) => {
         const { inv, error } = sanitizeInvitation(body);
         if (error) return sendJson(res, 400, { error });
         inv.createdAt = list[idx].createdAt;
+        inv.fotografii = list[idx].fotografii || []; // pozele se gestionează doar prin endpoint-urile de photos
         list[idx] = inv;
         saveInvitations(list);
         return sendJson(res, 200, { ok: true, invitation: inv });
@@ -378,10 +429,57 @@ const server = http.createServer(async (req, res) => {
       const list = loadInvitations();
       const idx = list.findIndex((i) => i.slug === parts[3]);
       if (idx === -1) return sendJson(res, 404, { error: 'Invitația nu există' });
+      for (const f of list[idx].fotografii || []) {
+        try { fs.unlinkSync(path.join(UPLOADS_DIR, f)); } catch {}
+      }
       list.splice(idx, 1);
       saveInvitations(list);
       try { fs.unlinkSync(rsvpFile(parts[3])); } catch {}
       return sendJson(res, 200, { ok: true });
+    }
+
+    // POST /api/admin/invitations/:slug/photos — adaugă fotografii (JSON cu data-URL-uri)
+    if (req.method === 'POST' && parts[2] === 'invitations' && parts[4] === 'photos' && parts.length === 5) {
+      try {
+        const list = loadInvitations();
+        const inv = list.find((i) => i.slug === parts[3]);
+        if (!inv) return sendJson(res, 404, { error: 'Invitația nu există' });
+        if (!areGalerie(inv)) return sendJson(res, 400, { error: 'Galeria foto e disponibilă doar la pachetele Complet și Premium.' });
+        const data = JSON.parse(await readBody(req, 15_000_000));
+        const images = Array.isArray(data.images) ? data.images : [];
+        if (!images.length) return sendJson(res, 400, { error: 'Nicio imagine primită.' });
+        inv.fotografii = inv.fotografii || [];
+        if (inv.fotografii.length + images.length > MAX_FOTOGRAFII) {
+          return sendJson(res, 400, { error: `Maxim ${MAX_FOTOGRAFII} fotografii per invitație.` });
+        }
+        const EXT = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp' };
+        for (const img of images) {
+          const m = /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/.exec(String(img));
+          if (!m) return sendJson(res, 400, { error: 'Format de imagine neacceptat (doar JPG, PNG, WebP).' });
+          const buf = Buffer.from(m[2], 'base64');
+          if (buf.length > 4_000_000) return sendJson(res, 400, { error: 'O fotografie depășește 4 MB.' });
+          const file = inv.slug + '-' + crypto.randomUUID().slice(0, 8) + EXT[m[1]];
+          fs.writeFileSync(path.join(UPLOADS_DIR, file), buf);
+          inv.fotografii.push(file);
+        }
+        saveInvitations(list);
+        return sendJson(res, 200, { ok: true, fotografii: inv.fotografii });
+      } catch {
+        return sendJson(res, 400, { error: 'Imaginile nu au putut fi încărcate (prea mari?).' });
+      }
+    }
+
+    // DELETE /api/admin/invitations/:slug/photos/:file — șterge o fotografie
+    if (req.method === 'DELETE' && parts[2] === 'invitations' && parts[4] === 'photos' && parts.length === 6) {
+      const list = loadInvitations();
+      const inv = list.find((i) => i.slug === parts[3]);
+      if (!inv) return sendJson(res, 404, { error: 'Invitația nu există' });
+      const idx = (inv.fotografii || []).indexOf(parts[5]);
+      if (idx === -1) return sendJson(res, 404, { error: 'Fotografia nu a fost găsită' });
+      inv.fotografii.splice(idx, 1);
+      saveInvitations(list);
+      try { fs.unlinkSync(path.join(UPLOADS_DIR, parts[5])); } catch {}
+      return sendJson(res, 200, { ok: true, fotografii: inv.fotografii });
     }
 
     // GET /api/admin/messages — mesajele de contact
@@ -421,10 +519,26 @@ const server = http.createServer(async (req, res) => {
       return sendHtml(res, 404, NOT_FOUND_PAGE);
     }
 
+    // /uploads/:file → fotografiile din galerie (de pe volumul de date)
+    if (parts.length === 2 && parts[0] === 'uploads') {
+      const file = path.basename(parts[1]); // fără traversare de directoare
+      return fs.readFile(path.join(UPLOADS_DIR, file), (err, content) => {
+        if (err) return sendHtml(res, 404, NOT_FOUND_PAGE);
+        res.writeHead(200, {
+          'Content-Type': MIME[path.extname(file)] || 'application/octet-stream',
+          'Cache-Control': 'public, max-age=86400'
+        });
+        res.end(content);
+      });
+    }
+
     // /:slug → invitația randată din template
     if (parts.length === 1 && !parts[0].includes('.')) {
       const inv = findInvitation(parts[0]);
-      if (inv) return sendHtml(res, 200, renderInvitation(inv));
+      if (inv) {
+        if (req.method === 'GET' && inv.slug !== DEMO_INVITATION.slug) countView(inv.slug);
+        return sendHtml(res, 200, renderInvitation(inv));
+      }
       return sendHtml(res, 404, NOT_FOUND_PAGE);
     }
 
