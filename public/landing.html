@@ -441,6 +441,60 @@
     background: #fff; color: var(--rose-dark); border: 1.5px solid var(--line); box-shadow: none;
   }
 
+  /* ---------- formular de comandă ---------- */
+  .order-overlay {
+    position: fixed; inset: 0; z-index: 60; display: none;
+    background: rgba(30, 45, 50, .45); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px);
+    align-items: center; justify-content: center; padding: 18px;
+  }
+  .order-overlay.open { display: flex; }
+  .order-modal {
+    width: min(600px, 100%); max-height: calc(100vh - 36px); overflow-y: auto;
+    background: var(--card); border: 1px solid var(--line); border-radius: 22px;
+    box-shadow: 0 30px 60px -25px rgba(40, 62, 68, .55); animation: pop .22s ease;
+  }
+  .order-head {
+    position: sticky; top: 0; z-index: 1;
+    background: var(--grad); color: #fff; padding: 16px 20px;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  }
+  .order-head b { font-size: 16px; display: block; }
+  .order-head small { font-size: 12.5px; opacity: .88; }
+  .order-close {
+    flex: 0 0 auto; width: 32px; height: 32px; border-radius: 999px; border: 0; cursor: pointer;
+    background: rgba(255, 255, 255, .22); color: #fff; font-size: 15px; line-height: 1;
+  }
+  .order-close:hover { background: rgba(255, 255, 255, .35); }
+  .order-body { padding: 18px 20px 20px; }
+  .order-body label { display: block; font-size: 13px; font-weight: 600; color: var(--ink-soft); margin: 0 0 6px; }
+  .order-body label small { font-weight: 400; color: var(--muted); }
+  .order-body input, .order-body textarea, .order-body select {
+    width: 100%; font-family: inherit; font-size: 14.5px; color: var(--ink);
+    background: #fff; border: 1.5px solid var(--line); border-radius: 12px;
+    padding: 11px 12px; outline: none; margin-bottom: 14px;
+  }
+  .order-body textarea { min-height: 70px; resize: vertical; }
+  .order-body input:focus, .order-body textarea:focus, .order-body select:focus {
+    border-color: var(--rose); box-shadow: 0 0 0 3px rgba(42, 157, 143, .15);
+  }
+  .order-grid { display: grid; gap: 0 14px; }
+  @media (min-width: 560px) { .order-grid.two { grid-template-columns: 1fr 1fr; } }
+  .tip-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .tip-chips button {
+    font-family: inherit; font-size: 14px; color: var(--ink-soft); cursor: pointer;
+    background: #fff; border: 1.5px solid var(--line); border-radius: 999px; padding: 9px 16px;
+    transition: all .15s;
+  }
+  .tip-chips button[aria-pressed="true"] {
+    background: var(--rose); border-color: var(--rose); color: #fff; font-weight: 600;
+  }
+  .order-note { font-size: 12.5px; color: var(--muted); line-height: 1.55; margin: 2px 0 14px; }
+  .order-ok { display: none; text-align: center; padding: 26px 8px 14px; }
+  .order-ok.show { display: block; }
+  .order-ok .big { font-size: 44px; margin-bottom: 10px; }
+  .order-ok h3 { font-size: 19px; margin-bottom: 8px; color: var(--ink); }
+  .order-ok p { font-size: 14.5px; color: var(--ink-soft); line-height: 1.65; max-width: 40ch; margin: 0 auto 18px; }
+
   /* animații la scroll */
   .reveal { opacity: 0; transform: translateY(22px); transition: opacity .6s ease, transform .6s ease; }
   .reveal.in { opacity: 1; transform: none; }
@@ -565,7 +619,7 @@
         <li>Programul zilei, cu locațiile pe hartă</li>
         <li>Pagină privată cu lista confirmărilor</li>
       </ul>
-      <button type="button" class="plan-cta" data-open-chat data-pachet="Simplu" data-pret="149">Alege Simplu</button>
+      <button type="button" class="plan-cta" data-order="simplu">Alege Simplu</button>
     </div>
     <div class="plan featured reveal" style="transition-delay:.1s">
       <span class="plan-badge">⭐ Cel mai ales</span>
@@ -579,7 +633,7 @@
         <li>Modificări nelimitate până la eveniment</li>
         <li>Mesajele și urările invitaților, adunate într-un loc</li>
       </ul>
-      <button type="button" class="plan-cta" data-open-chat data-pachet="Complet" data-pret="249">Alege Complet</button>
+      <button type="button" class="plan-cta" data-order="complet">Alege Complet</button>
     </div>
     <div class="plan reveal" style="transition-delay:.2s">
       <h3>Premium</h3>
@@ -592,7 +646,7 @@
         <li>Lista invitaților exportabilă în Excel</li>
         <li>Suport prioritar, direct pe WhatsApp</li>
       </ul>
-      <button type="button" class="plan-cta" data-open-chat data-pachet="Premium" data-pret="399">Alege Premium</button>
+      <button type="button" class="plan-cta" data-order="premium">Alege Premium</button>
     </div>
   </div>
   <p class="plans-note reveal">💡 Invitațiile tipărite costă 8–15 lei bucata — la 50 de invitați, 400–750 lei, plus drumurile. Invitația digitală ajunge la toți în 5 minute, pe WhatsApp.</p>
@@ -603,8 +657,8 @@
     <span class="spark spark-1" aria-hidden="true">✨</span>
     <span class="spark spark-2" aria-hidden="true">🎉</span>
     <h2>Pregătit pentru un moment de neuitat?</h2>
-    <p>Scrie-ne câteva cuvinte despre evenimentul tău și îți pregătim invitația.</p>
-    <button type="button" class="btn-primary" data-open-chat>💬 Contactează-ne</button>
+    <p>Completează detaliile evenimentului tău și revenim noi cu invitația pregătită.</p>
+    <button type="button" class="btn-primary" data-order="complet">🎉 Comandă invitația ta</button>
   </div>
 </div>
 
@@ -612,6 +666,89 @@
   <span>© 2026 Momente Dragi · făcut cu drag 🧡</span>
   <a href="/admin">Administrare</a>
 </footer>
+
+<div class="order-overlay" id="order-overlay">
+  <div class="order-modal" role="dialog" aria-modal="true" aria-label="Comandă invitația">
+    <div class="order-head">
+      <div>
+        <b id="order-title">Comandă invitația 🎉</b>
+        <small>Completează detaliile — revenim noi cu invitația gata</small>
+      </div>
+      <button type="button" class="order-close" id="order-close" aria-label="Închide">✕</button>
+    </div>
+    <div class="order-body">
+      <form id="order-form" novalidate>
+        <div class="chat-err" id="order-err"></div>
+
+        <label>Tipul evenimentului *</label>
+        <div class="tip-chips" role="group" aria-label="Tipul evenimentului">
+          <button type="button" data-tip="botez" aria-pressed="true">👶 Botez</button>
+          <button type="button" data-tip="nunta" aria-pressed="false">💍 Nuntă</button>
+          <button type="button" data-tip="aniversare" aria-pressed="false">🎂 Aniversare</button>
+          <button type="button" data-tip="altul" aria-pressed="false">✨ Altul</button>
+        </div>
+
+        <label for="o-pachet">Pachetul ales</label>
+        <select id="o-pachet">
+          <option value="simplu">Simplu — 149 lei</option>
+          <option value="complet">Complet — 249 lei ⭐</option>
+          <option value="premium">Premium — 399 lei</option>
+        </select>
+
+        <label for="o-sarbatorit" id="lbl-sarbatorit">Numele copilului</label>
+        <input type="text" id="o-sarbatorit" maxlength="120" placeholder="ex: Sofia Maria">
+
+        <div class="order-grid two">
+          <div id="row-parinti">
+            <label for="o-parinti">Părinții</label>
+            <input type="text" id="o-parinti" maxlength="120" placeholder="ex: Andrei &amp; Ioana">
+          </div>
+          <div id="row-nasi">
+            <label for="o-nasi">Nașii</label>
+            <input type="text" id="o-nasi" maxlength="120" placeholder="ex: Mihai &amp; Elena">
+          </div>
+        </div>
+
+        <label for="o-data">Data evenimentului <small>(dacă e stabilită)</small></label>
+        <input type="date" id="o-data">
+
+        <div class="order-grid two">
+          <div id="row-biserica">
+            <label for="o-biserica">Biserica și ora <small>(dacă e cazul)</small></label>
+            <input type="text" id="o-biserica" maxlength="250" placeholder="ex: Biserica Sf. Maria, ora 15:00">
+          </div>
+          <div>
+            <label for="o-petrecere">Locația petrecerii și ora</label>
+            <input type="text" id="o-petrecere" maxlength="250" placeholder="ex: Salon Panoramic, ora 19:00">
+          </div>
+        </div>
+
+        <div class="order-grid two">
+          <div>
+            <label for="o-contact-nume">Numele tău *</label>
+            <input type="text" id="o-contact-nume" maxlength="120" autocomplete="name" placeholder="ca să știm cu cine vorbim">
+          </div>
+          <div>
+            <label for="o-contact">Telefon sau e-mail *</label>
+            <input type="text" id="o-contact" maxlength="160" placeholder="ca să te putem contacta">
+          </div>
+        </div>
+
+        <label for="o-mesaj">Altceva ce ar trebui să știm? <small>(opțional)</small></label>
+        <textarea id="o-mesaj" maxlength="1000" placeholder="tema dorită, culori, poze, orice detaliu…"></textarea>
+
+        <p class="order-note">Nu-ți face griji dacă nu ai toate detaliile — le putem completa împreună. Nu plătești nimic acum: îți trimitem întâi invitația spre aprobare, împreună cu detaliile de plată.</p>
+        <button type="submit" class="chat-send" id="order-send">Trimite comanda 🎉</button>
+      </form>
+      <div class="order-ok" id="order-ok">
+        <div class="big">💌</div>
+        <h3>Mulțumim! Am primit comanda ta.</h3>
+        <p>Revenim în maximum 24 de ore, pe telefonul sau e-mailul lăsat, cu invitația pregătită și pașii următori.</p>
+        <button type="button" class="chat-send" id="order-done">Am înțeles ✨</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <button class="chat-fab" id="chat-fab" aria-label="Scrie-ne un mesaj">💬</button>
 <div class="chat-panel" id="chat-panel" role="dialog" aria-label="Contact">
@@ -666,14 +803,107 @@
   }
   fab.addEventListener('click', () => setChatOpen(!chatPanel.classList.contains('open')));
   document.querySelectorAll('[data-open-chat]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      // butoanele de pachet precompletează mesajul din chat
-      if (btn.dataset.pachet) {
-        document.getElementById('chat-msg').value =
-          'Bună! Aș dori pachetul ' + btn.dataset.pachet + ' (' + btn.dataset.pret + ' lei). Evenimentul meu: ';
-      }
-      setChatOpen(true);
+    btn.addEventListener('click', () => setChatOpen(true));
+  });
+
+  // ---------- formular de comandă ----------
+  const overlay = document.getElementById('order-overlay');
+  const orderForm = document.getElementById('order-form');
+  const orderErr = document.getElementById('order-err');
+  const orderOk = document.getElementById('order-ok');
+  const orderSend = document.getElementById('order-send');
+  let tipEveniment = 'botez';
+
+  // etichete și câmpuri vizibile, în funcție de tipul evenimentului
+  const TIPURI = {
+    botez:      { sarbatorit: 'Numele copilului', ph: 'ex: Sofia Maria', parinti: true, nasi: true, biserica: true },
+    nunta:      { sarbatorit: 'Numele mirilor', ph: 'ex: Ana & Radu', parinti: false, nasi: true, biserica: true },
+    aniversare: { sarbatorit: 'Sărbătoritul / sărbătorita', ph: 'ex: Maria, 1 anișor', parinti: false, nasi: false, biserica: false },
+    altul:      { sarbatorit: 'Evenimentul / sărbătoritul', ph: 'ex: Cununie civilă — Ana & Radu', parinti: false, nasi: false, biserica: false }
+  };
+
+  function setTip(tip) {
+    tipEveniment = tip;
+    const t = TIPURI[tip];
+    document.querySelectorAll('.tip-chips button').forEach((b) => {
+      b.setAttribute('aria-pressed', b.dataset.tip === tip ? 'true' : 'false');
     });
+    document.getElementById('lbl-sarbatorit').textContent = t.sarbatorit;
+    document.getElementById('o-sarbatorit').placeholder = t.ph;
+    document.getElementById('row-parinti').style.display = t.parinti ? '' : 'none';
+    document.getElementById('row-nasi').style.display = t.nasi ? '' : 'none';
+    document.getElementById('row-biserica').style.display = t.biserica ? '' : 'none';
+  }
+  document.querySelectorAll('.tip-chips button').forEach((b) => {
+    b.addEventListener('click', () => setTip(b.dataset.tip));
+  });
+
+  function setOrderOpen(open) {
+    overlay.classList.toggle('open', open);
+    document.body.style.overflow = open ? 'hidden' : '';
+    if (open) document.getElementById('o-sarbatorit').focus();
+  }
+  document.querySelectorAll('[data-order]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      document.getElementById('o-pachet').value = btn.dataset.order;
+      setOrderOpen(true);
+    });
+  });
+  document.getElementById('order-close').addEventListener('click', () => setOrderOpen(false));
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) setOrderOpen(false); });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && overlay.classList.contains('open')) setOrderOpen(false);
+  });
+
+  orderForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    orderErr.classList.remove('show');
+    const contactNume = document.getElementById('o-contact-nume').value.trim();
+    const contact = document.getElementById('o-contact').value.trim();
+    if (!contactNume || !contact) {
+      orderErr.textContent = 'Completează numele tău și telefonul sau e-mailul, ca să te putem contacta.';
+      orderErr.classList.add('show');
+      orderErr.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    orderSend.disabled = true;
+    orderSend.textContent = 'Se trimite...';
+    try {
+      const res = await fetch('/api/comanda', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pachet: document.getElementById('o-pachet').value,
+          tipEveniment,
+          sarbatorit: document.getElementById('o-sarbatorit').value.trim(),
+          parinti: document.getElementById('o-parinti').value.trim(),
+          nasi: document.getElementById('o-nasi').value.trim(),
+          data: document.getElementById('o-data').value,
+          biserica: document.getElementById('o-biserica').value.trim(),
+          petrecere: document.getElementById('o-petrecere').value.trim(),
+          contactNume,
+          contact,
+          mesaj: document.getElementById('o-mesaj').value.trim()
+        })
+      });
+      if (!res.ok) throw new Error();
+      orderForm.style.display = 'none';
+      orderOk.classList.add('show');
+    } catch {
+      orderErr.textContent = 'A apărut o eroare. Te rog încearcă din nou.';
+      orderErr.classList.add('show');
+    } finally {
+      orderSend.disabled = false;
+      orderSend.textContent = 'Trimite comanda 🎉';
+    }
+  });
+
+  document.getElementById('order-done').addEventListener('click', () => {
+    setOrderOpen(false);
+    orderForm.reset();
+    setTip('botez');
+    orderForm.style.display = '';
+    orderOk.classList.remove('show');
   });
 
   chatForm.addEventListener('submit', async (e) => {

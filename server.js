@@ -17,6 +17,7 @@ const RSVP_DIR = path.join(DATA_DIR, 'confirmari');
 const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
 const INVITATIONS_FILE = path.join(DATA_DIR, 'invitatii.json');
 const MESSAGES_FILE = path.join(DATA_DIR, 'mesaje.json');
+const ORDERS_FILE = path.join(DATA_DIR, 'comenzi.json');
 const VIEWS_FILE = path.join(DATA_DIR, 'views.json');
 const TEMPLATE_FILE = path.join(__dirname, 'templates', 'invitatie.html');
 const CONFIRMARI_TEMPLATE_FILE = path.join(__dirname, 'templates', 'confirmari.html');
@@ -90,6 +91,9 @@ function findInvitation(slug) {
 function readMessages() { return readJson(MESSAGES_FILE, []); }
 function writeMessages(list) { fs.writeFileSync(MESSAGES_FILE, JSON.stringify(list, null, 2)); }
 
+function readOrders() { return readJson(ORDERS_FILE, []); }
+function writeOrders(list) { fs.writeFileSync(ORDERS_FILE, JSON.stringify(list, null, 2)); }
+
 function readViews() { return readJson(VIEWS_FILE, {}); }
 function countView(slug) {
   const views = readViews();
@@ -106,37 +110,87 @@ function rsvpFile(slug) { return path.join(RSVP_DIR, slug + '.json'); }
 function readRsvps(slug) { return readJson(rsvpFile(slug), []); }
 function writeRsvps(slug, rsvps) { fs.writeFileSync(rsvpFile(slug), JSON.stringify(rsvps, null, 2)); }
 
+// ---------- comenzi ----------
+
+const TIPURI_EVENIMENT = ['botez', 'nunta', 'aniversare', 'altul'];
+const TIP_LABEL = { botez: 'Botez', nunta: 'Nuntă', aniversare: 'Aniversare', altul: 'Alt eveniment' };
+
+function sanitizeOrder(data) {
+  const s = (v, max) => String(v || '').trim().slice(0, max);
+  const order = {
+    pachet: PACHETE.includes(data.pachet) ? data.pachet : 'simplu',
+    tipEveniment: TIPURI_EVENIMENT.includes(data.tipEveniment) ? data.tipEveniment : '',
+    sarbatorit: s(data.sarbatorit, 120),   // copilul / mirii / sărbătoritul
+    parinti: s(data.parinti, 120),
+    nasi: s(data.nasi, 120),
+    data: s(data.data, 10),
+    biserica: s(data.biserica, 250),
+    petrecere: s(data.petrecere, 250),
+    contactNume: s(data.contactNume, 120),
+    contact: s(data.contact, 160),
+    mesaj: s(data.mesaj, 1000)
+  };
+  if (!order.tipEveniment) return { error: 'Alege tipul evenimentului.' };
+  if (!order.contactNume || !order.contact) return { error: 'Completează numele tău și telefonul sau e-mailul.' };
+  if (order.data && (!/^\d{4}-\d{2}-\d{2}$/.test(order.data) || isNaN(new Date(order.data).getTime()))) {
+    return { error: 'Data evenimentului este invalidă.' };
+  }
+  return { order };
+}
+
 // ---------- notificări email ----------
 
 // fire-and-forget: nu blochează răspunsul către vizitator, iar o eroare de email
 // nu afectează salvarea mesajului
-function notifyNewContactMessage(msg) {
+function sendNotification(subject, html) {
   if (!RESEND_API_KEY || !NOTIFY_EMAIL || typeof fetch !== 'function') return;
-  const html = `
-    <div style="font-family:sans-serif;max-width:520px">
-      <h2 style="margin:0 0 12px">Mesaj nou pe momente-dragi.ro</h2>
-      <p><strong>Nume:</strong> ${escapeHtml(msg.name)}</p>
-      <p><strong>Contact:</strong> ${escapeHtml(msg.contact)}</p>
-      <p style="white-space:pre-wrap;background:#f6f6f6;border-radius:8px;padding:12px">${escapeHtml(msg.message)}</p>
-      <p style="color:#888;font-size:13px">Poți răspunde și din secțiunea Mesaje a dashboardului de admin.</p>
-    </div>`;
   fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
       'Authorization': 'Bearer ' + RESEND_API_KEY,
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({
-      from: NOTIFY_FROM,
-      to: [NOTIFY_EMAIL],
-      subject: 'Mesaj nou de la ' + msg.name,
-      html
-    })
+    body: JSON.stringify({ from: NOTIFY_FROM, to: [NOTIFY_EMAIL], subject, html })
   }).then(async (r) => {
     if (!r.ok) console.error('Notificare email eșuată:', r.status, await r.text().catch(() => ''));
   }).catch((err) => {
     console.error('Notificare email eșuată:', err.message);
   });
+}
+
+function notifyNewContactMessage(msg) {
+  sendNotification('Mesaj nou de la ' + msg.name, `
+    <div style="font-family:sans-serif;max-width:520px">
+      <h2 style="margin:0 0 12px">Mesaj nou pe momente-dragi.ro</h2>
+      <p><strong>Nume:</strong> ${escapeHtml(msg.name)}</p>
+      <p><strong>Contact:</strong> ${escapeHtml(msg.contact)}</p>
+      <p style="white-space:pre-wrap;background:#f6f6f6;border-radius:8px;padding:12px">${escapeHtml(msg.message)}</p>
+      <p style="color:#888;font-size:13px">Poți răspunde și din secțiunea Mesaje a dashboardului de admin.</p>
+    </div>`);
+}
+
+function notifyNewOrder(order) {
+  const row = (label, val) => val
+    ? `<tr><td style="padding:4px 12px 4px 0;color:#888;white-space:nowrap">${label}</td><td style="padding:4px 0"><strong>${escapeHtml(val)}</strong></td></tr>`
+    : '';
+  sendNotification(`Comandă nouă: ${TIP_LABEL[order.tipEveniment]} — pachet ${order.pachet}`, `
+    <div style="font-family:sans-serif;max-width:560px">
+      <h2 style="margin:0 0 12px">🎉 Comandă nouă pe momente-dragi.ro</h2>
+      <table style="border-collapse:collapse;font-size:15px">
+        ${row('Pachet', order.pachet)}
+        ${row('Eveniment', TIP_LABEL[order.tipEveniment])}
+        ${row('Sărbătorit', order.sarbatorit)}
+        ${row('Părinții', order.parinti)}
+        ${row('Nașii', order.nasi)}
+        ${row('Data', order.data)}
+        ${row('Biserica', order.biserica)}
+        ${row('Petrecerea', order.petrecere)}
+        ${row('Nume contact', order.contactNume)}
+        ${row('Contact', order.contact)}
+      </table>
+      ${order.mesaj ? `<p style="white-space:pre-wrap;background:#f6f6f6;border-radius:8px;padding:12px">${escapeHtml(order.mesaj)}</p>` : ''}
+      <p style="color:#888;font-size:13px">Din dashboard → Comenzi poți crea invitația direct din această comandă.</p>
+    </div>`);
 }
 
 // ---------- randare invitație ----------
@@ -348,6 +402,24 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
+  // --- API public: comandă de pachet de pe landing ---
+  // POST /api/comanda
+  if (req.method === 'POST' && parts[0] === 'api' && parts[1] === 'comanda' && parts.length === 2) {
+    try {
+      const { order, error } = sanitizeOrder(JSON.parse(await readBody(req)));
+      if (error) return sendJson(res, 400, { error });
+      order.id = crypto.randomUUID();
+      order.createdAt = new Date().toISOString();
+      const orders = readOrders();
+      orders.push(order);
+      writeOrders(orders);
+      notifyNewOrder(order);
+      return sendJson(res, 200, { ok: true });
+    } catch {
+      return sendJson(res, 400, { error: 'A apărut o eroare. Încearcă din nou.' });
+    }
+  }
+
   // --- API confirmări (parola master sau parola proprie a invitației) ---
 
   // GET /api/rsvps/:slug — confirmările unei invitații
@@ -485,6 +557,21 @@ const server = http.createServer(async (req, res) => {
     // GET /api/admin/messages — mesajele de contact
     if (req.method === 'GET' && parts[2] === 'messages' && parts.length === 3) {
       return sendJson(res, 200, { messages: readMessages() });
+    }
+
+    // GET /api/admin/orders — comenzile de pachete
+    if (req.method === 'GET' && parts[2] === 'orders' && parts.length === 3) {
+      return sendJson(res, 200, { orders: readOrders() });
+    }
+
+    // DELETE /api/admin/orders/:id — șterge o comandă
+    if (req.method === 'DELETE' && parts[2] === 'orders' && parts.length === 4) {
+      const orders = readOrders();
+      const idx = orders.findIndex((o) => o.id === parts[3]);
+      if (idx === -1) return sendJson(res, 404, { error: 'Comanda nu a fost găsită' });
+      orders.splice(idx, 1);
+      writeOrders(orders);
+      return sendJson(res, 200, { ok: true });
     }
 
     // DELETE /api/admin/messages/:id — șterge un mesaj

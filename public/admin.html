@@ -193,7 +193,15 @@
 
   .foot { display: flex; justify-content: space-between; align-items: center; margin-top: 18px; flex-wrap: wrap; gap: 10px; }
   .link { font-family: inherit; background: none; border: 0; font-size: 14px; color: var(--teal-dark); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
-  #panel, #view-form, #view-rsvps, #view-msgs { display: none; }
+  #panel, #view-form, #view-rsvps, #view-msgs, #view-orders { display: none; }
+
+  .o-details { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 6px 14px; margin-top: 10px; font-size: 13.5px; }
+  .o-details span { color: var(--muted); }
+  .o-details b { color: var(--ink); font-weight: 600; }
+  .o-pachet { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; border-radius: 999px; padding: 3px 10px; margin-left: 8px; vertical-align: 1px; }
+  .o-pachet.simplu { background: #eef0ef; color: #6a7570; }
+  .o-pachet.complet { background: rgba(42, 157, 143, .14); color: var(--teal-dark); }
+  .o-pachet.premium { background: rgba(240, 160, 90, .2); color: #a3641f; }
 
   /* ---------- mesaje de contact ---------- */
   .msgcard {
@@ -237,6 +245,7 @@
         <div class="view-head">
           <h2>Invitațiile tale</h2>
           <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="btn-outline" id="orders-btn">🎉 Comenzi</button>
             <button class="btn-outline" id="msgs-btn">💬 Mesaje</button>
             <button class="btn" id="new-btn">➕ Invitație nouă</button>
           </div>
@@ -403,6 +412,19 @@
         </div>
       </div>
 
+      <!-- COMENZI DE PACHETE -->
+      <div id="view-orders">
+        <div class="view-head">
+          <h2>Comenzi</h2>
+          <button class="btn-outline" id="orders-back">← Înapoi la invitații</button>
+        </div>
+        <div id="order-list"></div>
+        <div class="empty" id="orders-empty" style="display:none">
+          <div class="big">🎉</div>
+          Nicio comandă încă
+        </div>
+      </div>
+
       <!-- MESAJE DE CONTACT -->
       <div id="view-msgs">
         <div class="view-head">
@@ -454,7 +476,7 @@
 
   // ---------- navigare între ecrane ----------
   function show(view) {
-    ['view-list', 'view-form', 'view-rsvps', 'view-msgs'].forEach((v) => { $(v).style.display = v === view ? 'block' : 'none'; });
+    ['view-list', 'view-form', 'view-rsvps', 'view-msgs', 'view-orders'].forEach((v) => { $(v).style.display = v === view ? 'block' : 'none'; });
   }
 
   function logout() {
@@ -872,6 +894,136 @@
     } catch (e) { alert(e.message); }
   }
 
+  // ---------- comenzi de pachete ----------
+  let orders = [];
+  const TIP_LABEL = { botez: '👶 Botez', nunta: '💍 Nuntă', aniversare: '🎂 Aniversare', altul: '✨ Alt eveniment' };
+
+  async function loadOrders() {
+    orders = (await api('/api/admin/orders')).orders;
+    $('orders-btn').textContent = '🎉 Comenzi' + (orders.length ? ' (' + orders.length + ')' : '');
+  }
+
+  // precompletează formularul de invitație cu datele din comandă
+  function openFormFromOrder(o) {
+    openForm(null);
+    $('i-nume').value = o.sarbatorit || '';
+    const prefix = { botez: 'botez-', nunta: 'nunta-', aniversare: 'aniversare-' }[o.tipEveniment] || '';
+    $('i-slug').value = slugify(o.sarbatorit || '').replace(/^botez-/, prefix);
+    slugTouched = true; // nu mai suprascrie slugul dacă editează numele
+    $('i-parinti').value = o.parinti || '';
+    $('i-nasi').value = o.nasi || '';
+    $('i-data').value = o.data || '';
+    $('i-bis-nume').value = o.biserica || '';
+    $('i-pet-nume').value = o.petrecere || '';
+    $('i-pachet').value = o.pachet || 'simplu';
+    updateFotoSection();
+    $('form-title').textContent = 'Invitație din comanda lui ' + o.contactNume;
+  }
+
+  function renderOrders() {
+    const box = $('order-list');
+    box.innerHTML = '';
+    $('orders-empty').style.display = orders.length ? 'none' : 'block';
+
+    orders.slice().reverse().forEach((o) => {
+      const card = document.createElement('div');
+      card.className = 'msgcard';
+
+      const top = document.createElement('div');
+      top.className = 'm-top';
+      const left = document.createElement('div');
+      const nm = document.createElement('span');
+      nm.className = 'm-name';
+      nm.textContent = o.contactNume;
+      left.appendChild(nm);
+      left.appendChild(document.createTextNode(' · '));
+      const contact = document.createElement('a');
+      contact.className = 'm-contact';
+      contact.textContent = o.contact;
+      const href = replyLink(o.contact);
+      if (href) contact.href = href;
+      left.appendChild(contact);
+      const pk = document.createElement('span');
+      pk.className = 'o-pachet ' + (o.pachet || 'simplu');
+      pk.textContent = o.pachet || 'simplu';
+      left.appendChild(pk);
+      const when = document.createElement('span');
+      when.className = 'm-when';
+      when.textContent = new Date(o.createdAt).toLocaleString('ro-RO', { dateStyle: 'short', timeStyle: 'short' });
+      top.append(left, when);
+
+      const details = document.createElement('div');
+      details.className = 'o-details';
+      const rows = [
+        ['Eveniment', TIP_LABEL[o.tipEveniment] || o.tipEveniment],
+        ['Sărbătorit', o.sarbatorit],
+        ['Părinții', o.parinti],
+        ['Nașii', o.nasi],
+        ['Data', o.data],
+        ['Biserica', o.biserica],
+        ['Petrecerea', o.petrecere]
+      ];
+      rows.forEach(([label, val]) => {
+        if (!val) return;
+        const d = document.createElement('div');
+        const lbl = document.createElement('span');
+        lbl.textContent = label + ': ';
+        const v = document.createElement('b');
+        v.textContent = val;
+        d.append(lbl, v);
+        details.appendChild(d);
+      });
+
+      const foot = document.createElement('div');
+      foot.className = 'm-foot';
+      if (href) {
+        const reply = document.createElement('a');
+        reply.className = 'm-reply';
+        reply.href = href;
+        reply.textContent = href.startsWith('mailto:') ? '↩️ Răspunde pe e-mail' : '📞 Sună';
+        foot.appendChild(reply);
+      }
+      const createBtn = document.createElement('button');
+      createBtn.className = 'btn';
+      createBtn.textContent = '✨ Creează invitația';
+      createBtn.addEventListener('click', () => openFormFromOrder(o));
+      foot.appendChild(createBtn);
+      const del = document.createElement('button');
+      del.className = 'del';
+      del.textContent = '✕';
+      del.title = 'Șterge comanda';
+      del.setAttribute('aria-label', 'Șterge comanda lui ' + o.contactNume);
+      del.addEventListener('click', async () => {
+        if (!confirm('Sigur ștergi comanda lui „' + o.contactNume + '"?')) return;
+        try {
+          await api('/api/admin/orders/' + encodeURIComponent(o.id), { method: 'DELETE' });
+          orders = orders.filter((x) => x.id !== o.id);
+          $('orders-btn').textContent = '🎉 Comenzi' + (orders.length ? ' (' + orders.length + ')' : '');
+          renderOrders();
+        } catch { alert('Nu am putut șterge comanda. Încearcă din nou.'); }
+      });
+      foot.appendChild(del);
+
+      card.append(top, details, foot);
+      if (o.mesaj) {
+        const text = document.createElement('div');
+        text.className = 'm-text';
+        text.textContent = o.mesaj;
+        card.insertBefore(text, foot);
+      }
+      box.appendChild(card);
+    });
+  }
+
+  $('orders-btn').addEventListener('click', async () => {
+    try {
+      await loadOrders();
+      renderOrders();
+      show('view-orders');
+    } catch (e) { alert(e.message); }
+  });
+  $('orders-back').addEventListener('click', () => refreshList().catch(() => {}));
+
   // ---------- mesaje de contact ----------
   let messages = [];
 
@@ -986,6 +1138,7 @@
     $('login').style.display = 'none';
     $('panel').style.display = 'block';
     loadMessages().catch(() => {});
+    loadOrders().catch(() => {});
   }
 
   async function tryLogin() {
