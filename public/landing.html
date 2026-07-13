@@ -320,9 +320,6 @@
   .plans { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; align-items: stretch; }
   @media (max-width: 820px) { .plans { grid-template-columns: 1fr; max-width: 420px; margin: 0 auto; } }
   .plans.single { grid-template-columns: 1fr; max-width: 500px; margin: 30px auto 60px; }
-  .extras { background: rgba(42, 157, 143, .07); border: 1px dashed var(--rose); border-radius: 14px; padding: 12px 14px; margin-bottom: 18px; }
-  .extras-title { font-size: 12.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--rose-dark); margin-bottom: 6px; }
-  .extras-list { font-size: 14px; color: var(--ink-soft); line-height: 1.7; }
 
   /* cardul unic de preț — aerisit, cu ramă interioară */
   .plans.single .plan {
@@ -338,8 +335,6 @@
   }
   .plans.single .plan .price { color: var(--rose-dark); font-size: 54px; }
   .plans.single .plan .checks li::before { color: var(--peach); }
-  .plans.single .plan .extras { background: #fdf4e7; border: 1px solid #f3ddb9; }
-  .plans.single .plan .extras-title { color: #a3641f; }
   .plans.single .plan .plan-cta { font-weight: 700; }
   .plan {
     position: relative;
@@ -486,17 +481,6 @@
     background: var(--rose); border-color: var(--rose); color: #fff; font-weight: 600;
   }
   .order-note { font-size: 12.5px; color: var(--muted); line-height: 1.55; margin: 2px 0 14px; }
-  .extra-checks { margin-bottom: 14px; }
-  .order-body label.extra-check {
-    display: flex; align-items: center; gap: 10px; cursor: pointer;
-    font-size: 14px; font-weight: 400; color: var(--ink);
-    border: 1.5px solid var(--line); border-radius: 12px; padding: 11px 12px; margin: 0 0 8px;
-    transition: border-color .15s, background .15s;
-  }
-  .order-body label.extra-check:has(input:checked) { border-color: var(--rose); background: rgba(42, 157, 143, .07); }
-  .order-body .extra-check input { width: auto; margin: 0; accent-color: var(--rose); flex: 0 0 auto; }
-  .extra-check .xtxt { flex: 1; }
-  .extra-check .xprice { font-weight: 600; color: var(--rose-dark); font-size: 13.5px; white-space: nowrap; }
   .order-ok { display: none; text-align: center; padding: 26px 8px 14px; }
   .order-ok.show { display: block; }
   .order-ok .big { font-size: 44px; margin-bottom: 10px; }
@@ -627,10 +611,6 @@
         <li><b>Modificări nelimitate</b> până la eveniment</li>
         <li>Gata în <b>48 de ore</b></li>
       </ul>
-      <div class="extras">
-        <p class="extras-title">Extra opționale — 50 lei fiecare:</p>
-        <p class="extras-list">📸 galerie cu fotografiile voastre &nbsp;·&nbsp; ⚡ gata în 24 de ore</p>
-      </div>
       <button type="button" class="plan-cta" data-order="1">Comandă invitația 🎉</button>
     </div>
   </div>
@@ -660,12 +640,6 @@
           <button type="button" data-tip="nunta" aria-pressed="false">💍 Nuntă</button>
           <button type="button" data-tip="aniversare" aria-pressed="false">🎂 Aniversare</button>
           <button type="button" data-tip="altul" aria-pressed="false">✨ Altul</button>
-        </div>
-
-        <label>Extra opționale <small>(50 lei fiecare)</small></label>
-        <div class="extra-checks">
-          <label class="extra-check"><input type="checkbox" id="x-galerie"> <span class="xtxt">📸 Galerie cu fotografiile voastre</span> <span class="xprice">+50 lei</span></label>
-          <label class="extra-check"><input type="checkbox" id="x-livrare"> <span class="xtxt">⚡ Gata în 24 de ore</span> <span class="xprice">+50 lei</span></label>
         </div>
 
         <label for="o-sarbatorit" id="lbl-sarbatorit">Numele copilului</label>
@@ -820,15 +794,6 @@
     btn.addEventListener('click', () => setOrderOpen(true));
   });
 
-  // totalul comenzii: 249 lei + 50 lei / extra bifat
-  function updateTotal() {
-    const extra = ['x-galerie', 'x-livrare'].filter((id) => document.getElementById(id).checked).length;
-    orderSend.textContent = 'Trimite comanda — ' + (249 + 50 * extra) + ' lei 🎉';
-  }
-  ['x-galerie', 'x-livrare'].forEach((id) => {
-    document.getElementById(id).addEventListener('change', updateTotal);
-  });
-  updateTotal();
   document.getElementById('order-close').addEventListener('click', () => setOrderOpen(false));
   overlay.addEventListener('click', (e) => { if (e.target === overlay) setOrderOpen(false); });
   document.addEventListener('keydown', (e) => {
@@ -853,10 +818,6 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          extras: {
-            galerie: document.getElementById('x-galerie').checked,
-            livrare24h: document.getElementById('x-livrare').checked
-          },
           tipEveniment,
           sarbatorit: document.getElementById('o-sarbatorit').value.trim(),
           parinti: document.getElementById('o-parinti').value.trim(),
@@ -877,7 +838,7 @@
       orderErr.classList.add('show');
     } finally {
       orderSend.disabled = false;
-      updateTotal();
+      orderSend.textContent = 'Trimite comanda 🎉';
     }
   });
 
@@ -885,7 +846,6 @@
     setOrderOpen(false);
     orderForm.reset();
     setTip('botez');
-    updateTotal();
     orderForm.style.display = '';
     orderOk.classList.remove('show');
   });
