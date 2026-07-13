@@ -52,8 +52,9 @@ const RO_LUNI = ['Ianuarie', 'Februarie', 'Martie', 'Aprilie', 'Mai', 'Iunie',
 // slug-uri care nu pot fi folosite de invitații (căi rezervate)
 const RESERVED_SLUGS = ['admin', 'api', 'templates', 'data', 'public', 'demo', 'uploads'];
 
-// pachetele comerciale — decid ce funcții primește invitația
-const PACHETE = ['simplu', 'complet', 'premium'];
+// un singur plan (249 lei) + extra-uri opționale (50 lei fiecare)
+const PRET_BAZA = 249;
+const PRET_EXTRA = 50;
 const MAX_FOTOGRAFII = 6;
 const SLUG_RE = /^[a-z0-9][a-z0-9-]{1,79}$/;
 
@@ -66,7 +67,7 @@ const DEMO_INVITATION = {
   data: '2026-10-17',
   biserica: { nume: 'Biserica Sfânta Maria', adresa: 'Strada Exemplu 10, București', ora: '15:00' },
   petrecere: { nume: 'Salon Panoramic', adresa: 'Strada Exemplu 22, București', ora: '19:00' },
-  pachet: 'premium',
+  optiuni: { galerie: true, melodie: true },
   introText: 'Micuța noastră face primul pas într-o aventură plină de iubire și binecuvântare, iar noi ne-am bucura enorm să fiți alături de noi la Sfântul Botez.',
   mesajSafari: 'Pregătește-ți zâmbetul și spiritul de aventură! Leul, girafa, elefantul, zebra și toate animăluțele din safari abia așteaptă să sărbătorim împreună o zi plină de voie bună și amintiri frumoase. Vă așteptăm cu drag!',
   footerText: 'Cu drag, familia Sofiei 🦁 (invitație demonstrativă)'
@@ -102,10 +103,18 @@ function countView(slug) {
   try { fs.writeFileSync(VIEWS_FILE, JSON.stringify(views, null, 2)); } catch {}
 }
 
-// pachetul decide funcțiile: galeria foto de la „complet", statisticile de la „premium"
-function pachetOf(inv) { return PACHETE.includes(inv.pachet) ? inv.pachet : 'simplu'; }
-function areGalerie(inv) { return pachetOf(inv) !== 'simplu'; }
-function areStatistici(inv) { return pachetOf(inv) === 'premium'; }
+// opțiunile activate pe invitație; invitațiile vechi cu „pachet" sunt mapate automat.
+// statisticile și exportul sunt incluse pentru toți — doar galeria și melodia sunt extra-uri.
+function optiuniOf(inv) {
+  if (inv.optiuni && typeof inv.optiuni === 'object') {
+    return { galerie: !!inv.optiuni.galerie, melodie: !!inv.optiuni.melodie };
+  }
+  if (inv.pachet === 'premium') return { galerie: true, melodie: true };
+  if (inv.pachet === 'complet') return { galerie: true, melodie: false };
+  return { galerie: false, melodie: false };
+}
+function areGalerie(inv) { return optiuniOf(inv).galerie; }
+function areMelodie(inv) { return optiuniOf(inv).melodie; }
 
 function rsvpFile(slug) { return path.join(RSVP_DIR, slug + '.json'); }
 function readRsvps(slug) { return readJson(rsvpFile(slug), []); }
@@ -118,8 +127,14 @@ const TIP_LABEL = { botez: 'Botez', nunta: 'Nuntă', aniversare: 'Aniversare', a
 
 function sanitizeOrder(data) {
   const s = (v, max) => String(v || '').trim().slice(0, max);
+  const extras = {
+    galerie: !!(data.extras && data.extras.galerie),
+    melodie: !!(data.extras && data.extras.melodie),
+    livrare24h: !!(data.extras && data.extras.livrare24h)
+  };
   const order = {
-    pachet: PACHETE.includes(data.pachet) ? data.pachet : 'simplu',
+    extras,
+    pret: PRET_BAZA + PRET_EXTRA * Object.values(extras).filter(Boolean).length,
     tipEveniment: TIPURI_EVENIMENT.includes(data.tipEveniment) ? data.tipEveniment : '',
     sarbatorit: s(data.sarbatorit, 120),   // copilul / mirii / sărbătoritul
     parinti: s(data.parinti, 120),
@@ -174,11 +189,17 @@ function notifyNewOrder(order) {
   const row = (label, val) => val
     ? `<tr><td style="padding:4px 12px 4px 0;color:#888;white-space:nowrap">${label}</td><td style="padding:4px 0"><strong>${escapeHtml(val)}</strong></td></tr>`
     : '';
-  sendNotification(`Comandă nouă: ${TIP_LABEL[order.tipEveniment]} — pachet ${order.pachet}`, `
+  const extrasList = [
+    order.extras.galerie && '📸 galerie foto',
+    order.extras.melodie && '🎵 melodie',
+    order.extras.livrare24h && '⚡ livrare în 24h'
+  ].filter(Boolean).join(', ');
+  sendNotification(`Comandă nouă: ${TIP_LABEL[order.tipEveniment]} — ${order.pret} lei`, `
     <div style="font-family:sans-serif;max-width:560px">
       <h2 style="margin:0 0 12px">🎉 Comandă nouă pe momente-dragi.ro</h2>
       <table style="border-collapse:collapse;font-size:15px">
-        ${row('Pachet', order.pachet)}
+        ${row('Preț', order.pret + ' lei')}
+        ${row('Extra-uri', extrasList || '—')}
         ${row('Eveniment', TIP_LABEL[order.tipEveniment])}
         ${row('Sărbătorit', order.sarbatorit)}
         ${row('Părinții', order.parinti)}
@@ -237,7 +258,7 @@ function renderInvitation(inv) {
   // blocuri opționale de HTML (nescăpate) — {{{cheie}}} se înlocuiește înaintea {{cheie}}
   const raw = {
     galerieBlock: areGalerie(inv) ? galerieHtml(inv) : '',
-    muzicaBlock: pachetOf(inv) === 'premium' && inv.melodie ? muzicaHtml(inv) : ''
+    muzicaBlock: areMelodie(inv) && inv.melodie ? muzicaHtml(inv) : ''
   };
   return template
     .replace(/{{{(\w+)}}}/g, (_, key) => raw[key] ?? '')
@@ -308,7 +329,7 @@ function sanitizeInvitation(data) {
     mesajSafari: s(data.mesajSafari, 1000),
     footerText: s(data.footerText, 200),
     parolaAdmin: s(data.parolaAdmin, 60), // opțional — acces la /slug/admin pentru familie
-    pachet: PACHETE.includes(data.pachet) ? data.pachet : 'simplu'
+    optiuni: optiuniOf(data) // acceptă și formatul vechi cu „pachet"
   };
 
   if (!SLUG_RE.test(inv.slug)) return { error: 'Slug invalid — folosește doar litere mici, cifre și cratime.' };
@@ -450,8 +471,7 @@ const server = http.createServer(async (req, res) => {
     if (!canManageRsvps(req, inv)) return sendJson(res, 401, { error: 'Parolă incorectă' });
     return sendJson(res, 200, {
       rsvps: readRsvps(parts[2]),
-      pachet: pachetOf(inv),
-      views: areStatistici(inv) ? (readViews()[inv.slug] || 0) : null
+      views: inv.slug === DEMO_INVITATION.slug ? 0 : (readViews()[inv.slug] || 0)
     });
   }
 
@@ -539,7 +559,7 @@ const server = http.createServer(async (req, res) => {
         const list = loadInvitations();
         const inv = list.find((i) => i.slug === parts[3]);
         if (!inv) return sendJson(res, 404, { error: 'Invitația nu există' });
-        if (!areGalerie(inv)) return sendJson(res, 400, { error: 'Galeria foto e disponibilă doar la pachetele Complet și Premium.' });
+        if (!areGalerie(inv)) return sendJson(res, 400, { error: 'Bifează întâi opțiunea Galerie foto pe invitație și salvează.' });
         const data = JSON.parse(await readBody(req, 15_000_000));
         const images = Array.isArray(data.images) ? data.images : [];
         if (!images.length) return sendJson(res, 400, { error: 'Nicio imagine primită.' });
@@ -570,7 +590,7 @@ const server = http.createServer(async (req, res) => {
         const list = loadInvitations();
         const inv = list.find((i) => i.slug === parts[3]);
         if (!inv) return sendJson(res, 404, { error: 'Invitația nu există' });
-        if (pachetOf(inv) !== 'premium') return sendJson(res, 400, { error: 'Melodia e disponibilă doar la pachetul Premium.' });
+        if (!areMelodie(inv)) return sendJson(res, 400, { error: 'Bifează întâi opțiunea Melodie pe invitație și salvează.' });
         const data = JSON.parse(await readBody(req, 15_000_000));
         const m = /^data:audio\/(?:mpeg|mp3);base64,([A-Za-z0-9+/=]+)$/.exec(String(data.audio || ''));
         if (!m) return sendJson(res, 400, { error: 'Format neacceptat — alege un fișier MP3.' });

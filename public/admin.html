@@ -126,10 +126,16 @@
   .fset { border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
   .fset legend { font-size: 12px; letter-spacing: .15em; text-transform: uppercase; color: var(--teal-dark); font-weight: 600; padding: 0 6px; }
 
-  .inv-pachet { display: inline-block; font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; border-radius: 999px; padding: 2px 8px; margin-left: 6px; vertical-align: 1px; }
-  .inv-pachet.simplu { background: #eef0ef; color: #6a7570; }
-  .inv-pachet.complet { background: rgba(42, 157, 143, .14); color: var(--teal-dark); }
-  .inv-pachet.premium { background: rgba(240, 160, 90, .2); color: #a3641f; }
+  .inv-pachet { display: inline-block; font-size: 11px; font-weight: 600; border-radius: 999px; padding: 2px 8px; margin-left: 6px; vertical-align: 1px; background: rgba(42, 157, 143, .14); color: var(--teal-dark); }
+
+  .op-checks { display: flex; gap: 10px; flex-wrap: wrap; }
+  .fgrid label.op-check {
+    display: flex; align-items: center; gap: 8px; cursor: pointer; margin: 0;
+    font-size: 14px; font-weight: 500; color: var(--ink);
+    border: 1.5px solid var(--line); border-radius: 12px; padding: 10px 14px;
+  }
+  .fgrid label.op-check:has(input:checked) { border-color: var(--teal); background: rgba(42, 157, 143, .08); }
+  .op-check input { accent-color: var(--teal); margin: 0; }
 
   .foto-hint { font-size: 13px; color: var(--muted); margin-bottom: 10px; }
   .foto-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; margin-bottom: 12px; }
@@ -348,12 +354,11 @@
             <input type="text" id="i-parola" placeholder="ex: familia-sofia-2026" autocomplete="off">
           </div>
           <div>
-            <label for="i-pachet">Pachet <small>— stabilește funcțiile invitației</small></label>
-            <select id="i-pachet">
-              <option value="simplu">Simplu — invitație + confirmări</option>
-              <option value="complet">Complet — + galerie foto</option>
-              <option value="premium">Premium — + statistici și export listă invitați</option>
-            </select>
+            <label>Extra-uri incluse <small>— ce a cumpărat clientul (50 lei fiecare)</small></label>
+            <div class="op-checks">
+              <label class="op-check"><input type="checkbox" id="i-op-galerie"> 📸 Galerie foto</label>
+              <label class="op-check"><input type="checkbox" id="i-op-melodie"> 🎵 Melodie</label>
+            </div>
           </div>
           <fieldset class="fset" id="foto-set" style="display:none">
             <legend>📸 Galerie foto</legend>
@@ -461,6 +466,14 @@
     'Iulie', 'August', 'Septembrie', 'Octombrie', 'Noiembrie', 'Decembrie'];
 
   let invitations = [];
+
+  // opțiunile invitației, cu mapare din formatul vechi cu „pachet"
+  function optiuniOf(inv) {
+    if (inv.optiuni && typeof inv.optiuni === 'object') return { galerie: !!inv.optiuni.galerie, melodie: !!inv.optiuni.melodie };
+    if (inv.pachet === 'premium') return { galerie: true, melodie: true };
+    if (inv.pachet === 'complet') return { galerie: true, melodie: false };
+    return { galerie: false, melodie: false };
+  }
   let invQuery = '';        // căutare în lista de invitații
   let editingSlug = null;   // null = creare, altfel slug-ul editat
   let editingInv = null;    // obiectul invitației editate (pentru galerie foto)
@@ -534,11 +547,13 @@
       const dt = document.createElement('div');
       dt.className = 'inv-date';
       dt.textContent = '📅 ' + formatDate(inv.data);
-      const pk = document.createElement('span');
-      const pachet = ['simplu', 'complet', 'premium'].includes(inv.pachet) ? inv.pachet : 'simplu';
-      pk.className = 'inv-pachet ' + pachet;
-      pk.textContent = pachet;
-      dt.append(' ', pk);
+      const op = optiuniOf(inv);
+      [op.galerie && '📸 galerie', op.melodie && '🎵 melodie'].filter(Boolean).forEach((t) => {
+        const pk = document.createElement('span');
+        pk.className = 'inv-pachet';
+        pk.textContent = t;
+        dt.append(' ', pk);
+      });
       info.append(nm, dt);
       const count = document.createElement('button');
       count.className = 'inv-count';
@@ -674,7 +689,9 @@
     $('i-mesaj').value = inv ? inv.mesajSafari : DEFAULT_MESAJ;
     $('i-footer').value = inv ? inv.footerText : '';
     $('i-parola').value = inv ? (inv.parolaAdmin || '') : '';
-    $('i-pachet').value = inv && ['simplu', 'complet', 'premium'].includes(inv.pachet) ? inv.pachet : 'simplu';
+    const op = inv ? optiuniOf(inv) : { galerie: false, melodie: false };
+    $('i-op-galerie').checked = op.galerie;
+    $('i-op-melodie').checked = op.melodie;
     updateFotoSection();
     updateMuzicaSection();
     show('view-form');
@@ -682,7 +699,7 @@
 
   // ---------- galerie foto (pachet Complet / Premium) ----------
   function updateFotoSection() {
-    const areGalerie = $('i-pachet').value !== 'simplu';
+    const areGalerie = $('i-op-galerie').checked;
     $('foto-set').style.display = areGalerie ? 'block' : 'none';
     if (!areGalerie) return;
     if (!editingSlug) {
@@ -698,9 +715,9 @@
 
   // ---------- melodie (pachet Premium) ----------
   function updateMuzicaSection() {
-    const premium = $('i-pachet').value === 'premium';
-    $('muzica-set').style.display = premium ? 'block' : 'none';
-    if (!premium) return;
+    const areMelodie = $('i-op-melodie').checked;
+    $('muzica-set').style.display = areMelodie ? 'block' : 'none';
+    if (!areMelodie) return;
     if (!editingSlug) {
       $('muzica-hint').textContent = 'Salvează întâi invitația, apoi revino la Editează ca să încarci melodia.';
       $('muzica-add').style.display = 'none';
@@ -793,7 +810,8 @@
     });
   }
 
-  $('i-pachet').addEventListener('change', () => { updateFotoSection(); updateMuzicaSection(); });
+  $('i-op-galerie').addEventListener('change', updateFotoSection);
+  $('i-op-melodie').addEventListener('change', updateMuzicaSection);
   $('foto-add').addEventListener('click', () => $('foto-input').click());
   $('foto-input').addEventListener('change', async (e) => {
     const files = [...e.target.files];
@@ -844,7 +862,7 @@
       mesajSafari: $('i-mesaj').value.trim(),
       footerText: $('i-footer').value.trim(),
       parolaAdmin: $('i-parola').value.trim(),
-      pachet: $('i-pachet').value
+      optiuni: { galerie: $('i-op-galerie').checked, melodie: $('i-op-melodie').checked }
     };
     try {
       if (editingSlug) {
@@ -976,10 +994,11 @@
     $('i-data').value = o.data || '';
     $('i-bis-nume').value = o.biserica || '';
     $('i-pet-nume').value = o.petrecere || '';
-    $('i-pachet').value = o.pachet || 'simplu';
+    $('i-op-galerie').checked = !!(o.extras && o.extras.galerie);
+    $('i-op-melodie').checked = !!(o.extras && o.extras.melodie);
     updateFotoSection();
     updateMuzicaSection();
-    $('form-title').textContent = 'Invitație din comanda lui ' + o.contactNume;
+    $('form-title').textContent = 'Invitație din comanda lui ' + o.contactNume + (o.pret ? ' — ' + o.pret + ' lei' : '');
   }
 
   function renderOrders() {
@@ -1006,8 +1025,8 @@
       if (href) contact.href = href;
       left.appendChild(contact);
       const pk = document.createElement('span');
-      pk.className = 'o-pachet ' + (o.pachet || 'simplu');
-      pk.textContent = o.pachet || 'simplu';
+      pk.className = 'o-pachet complet';
+      pk.textContent = (o.pret || 249) + ' lei';
       left.appendChild(pk);
       const when = document.createElement('span');
       when.className = 'm-when';
@@ -1016,8 +1035,12 @@
 
       const details = document.createElement('div');
       details.className = 'o-details';
+      const extrasList = o.extras
+        ? [o.extras.galerie && '📸 galerie', o.extras.melodie && '🎵 melodie', o.extras.livrare24h && '⚡ livrare 24h'].filter(Boolean).join(', ')
+        : '';
       const rows = [
         ['Eveniment', TIP_LABEL[o.tipEveniment] || o.tipEveniment],
+        ['Extra-uri', extrasList || 'niciunul'],
         ['Sărbătorit', o.sarbatorit],
         ['Părinții', o.parinti],
         ['Nașii', o.nasi],

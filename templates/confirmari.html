@@ -277,12 +277,10 @@
     if (!res.ok) throw new Error();
     const data = await res.json();
     allRsvps = data.rsvps;
-    // funcțiile pachetului Premium: contorul de vizualizări și exportul listei
-    if (data.pachet === 'premium') {
-      document.getElementById('st-views-box').style.display = 'block';
-      document.getElementById('st-views').textContent = data.views || 0;
-      document.getElementById('export-btn').style.display = 'inline-block';
-    }
+    // statisticile și exportul sunt incluse pentru toate invitațiile
+    document.getElementById('st-views-box').style.display = 'block';
+    document.getElementById('st-views').textContent = data.views || 0;
+    document.getElementById('export-btn').style.display = 'inline-block';
     sessionStorage.setItem(PW_KEY, password);
     updateStats();
     render();
