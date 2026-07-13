@@ -41,7 +41,8 @@ const MIME = {
   '.svg': 'image/svg+xml',
   '.ico': 'image/x-icon',
   '.webp': 'image/webp',
-  '.woff2': 'font/woff2'
+  '.woff2': 'font/woff2',
+  '.mp3': 'audio/mpeg'
 };
 
 const RO_ZILE = ['duminică', 'luni', 'marți', 'miercuri', 'joi', 'vineri', 'sâmbătă'];
@@ -234,10 +235,30 @@ function renderInvitation(inv) {
     footerText: inv.footerText
   };
   // blocuri opționale de HTML (nescăpate) — {{{cheie}}} se înlocuiește înaintea {{cheie}}
-  const raw = { galerieBlock: areGalerie(inv) ? galerieHtml(inv) : '' };
+  const raw = {
+    galerieBlock: areGalerie(inv) ? galerieHtml(inv) : '',
+    muzicaBlock: pachetOf(inv) === 'premium' && inv.melodie ? muzicaHtml(inv) : ''
+  };
   return template
     .replace(/{{{(\w+)}}}/g, (_, key) => raw[key] ?? '')
     .replace(/{{(\w+)}}/g, (_, key) => escapeHtml(vars[key] ?? ''));
+}
+
+// buton plutitor de redare a melodiei — doar pentru pachetul Premium
+function muzicaHtml(inv) {
+  return `
+    <audio id="muzica" src="/uploads/${escapeHtml(inv.melodie)}" loop preload="none"></audio>
+    <button id="muzica-btn" type="button" aria-label="Pornește melodia" style="position:fixed;left:16px;bottom:16px;z-index:50;width:52px;height:52px;border-radius:999px;border:1px solid var(--line);background:linear-gradient(180deg,#fffdf7,#f3ead6);color:var(--ink);font-size:22px;cursor:pointer;box-shadow:0 10px 24px -10px rgba(90,70,40,.5);">🎵</button>
+    <script>
+      (function () {
+        const audio = document.getElementById('muzica');
+        const btn = document.getElementById('muzica-btn');
+        btn.addEventListener('click', () => {
+          if (audio.paused) { audio.play().catch(() => {}); btn.textContent = '⏸'; }
+          else { audio.pause(); btn.textContent = '🎵'; }
+        });
+      })();
+    </script>`;
 }
 
 // secțiunea de galerie foto — doar pentru pachetele Complet și Premium
@@ -487,7 +508,8 @@ const server = http.createServer(async (req, res) => {
         const { inv, error } = sanitizeInvitation(body);
         if (error) return sendJson(res, 400, { error });
         inv.createdAt = list[idx].createdAt;
-        inv.fotografii = list[idx].fotografii || []; // pozele se gestionează doar prin endpoint-urile de photos
+        inv.fotografii = list[idx].fotografii || []; // pozele și melodia se gestionează prin endpoint-urile lor
+        if (list[idx].melodie) inv.melodie = list[idx].melodie;
         list[idx] = inv;
         saveInvitations(list);
         return sendJson(res, 200, { ok: true, invitation: inv });
@@ -504,6 +526,7 @@ const server = http.createServer(async (req, res) => {
       for (const f of list[idx].fotografii || []) {
         try { fs.unlinkSync(path.join(UPLOADS_DIR, f)); } catch {}
       }
+      if (list[idx].melodie) { try { fs.unlinkSync(path.join(UPLOADS_DIR, list[idx].melodie)); } catch {} }
       list.splice(idx, 1);
       saveInvitations(list);
       try { fs.unlinkSync(rsvpFile(parts[3])); } catch {}
@@ -539,6 +562,39 @@ const server = http.createServer(async (req, res) => {
       } catch {
         return sendJson(res, 400, { error: 'Imaginile nu au putut fi încărcate (prea mari?).' });
       }
+    }
+
+    // POST /api/admin/invitations/:slug/melodie — încarcă melodia (MP3, doar Premium)
+    if (req.method === 'POST' && parts[2] === 'invitations' && parts[4] === 'melodie' && parts.length === 5) {
+      try {
+        const list = loadInvitations();
+        const inv = list.find((i) => i.slug === parts[3]);
+        if (!inv) return sendJson(res, 404, { error: 'Invitația nu există' });
+        if (pachetOf(inv) !== 'premium') return sendJson(res, 400, { error: 'Melodia e disponibilă doar la pachetul Premium.' });
+        const data = JSON.parse(await readBody(req, 15_000_000));
+        const m = /^data:audio\/(?:mpeg|mp3);base64,([A-Za-z0-9+/=]+)$/.exec(String(data.audio || ''));
+        if (!m) return sendJson(res, 400, { error: 'Format neacceptat — alege un fișier MP3.' });
+        const buf = Buffer.from(m[1], 'base64');
+        if (buf.length > 8_000_000) return sendJson(res, 400, { error: 'Melodia depășește 8 MB.' });
+        if (inv.melodie) { try { fs.unlinkSync(path.join(UPLOADS_DIR, inv.melodie)); } catch {} }
+        inv.melodie = inv.slug + '-muzica-' + crypto.randomUUID().slice(0, 8) + '.mp3';
+        fs.writeFileSync(path.join(UPLOADS_DIR, inv.melodie), buf);
+        saveInvitations(list);
+        return sendJson(res, 200, { ok: true, melodie: inv.melodie });
+      } catch {
+        return sendJson(res, 400, { error: 'Melodia nu a putut fi încărcată (prea mare?).' });
+      }
+    }
+
+    // DELETE /api/admin/invitations/:slug/melodie — șterge melodia
+    if (req.method === 'DELETE' && parts[2] === 'invitations' && parts[4] === 'melodie' && parts.length === 5) {
+      const list = loadInvitations();
+      const inv = list.find((i) => i.slug === parts[3]);
+      if (!inv) return sendJson(res, 404, { error: 'Invitația nu există' });
+      if (inv.melodie) { try { fs.unlinkSync(path.join(UPLOADS_DIR, inv.melodie)); } catch {} }
+      delete inv.melodie;
+      saveInvitations(list);
+      return sendJson(res, 200, { ok: true });
     }
 
     // DELETE /api/admin/invitations/:slug/photos/:file — șterge o fotografie
