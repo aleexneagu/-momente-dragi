@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nunta {{nume}}</title>
+<meta name="description" content="Invitație la nunta {{nume}} — {{dataLunga}}. Confirmă prezența!">
+<!-- preview la partajarea pe WhatsApp / Messenger -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="💍 Nunta {{nume}} — {{dataLunga}}">
+<meta property="og:description" content="Ești invitat! Deschide invitația și confirmă-ți prezența în câteva secunde.">
+<meta property="og:url" content="{{baseUrl}}/{{slug}}">
+<meta property="og:locale" content="ro_RO">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💍</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Great+Vibes&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #fdfaf7;
+    --paper-2: #f6ede7;
+    --card: #fffdfb;
+    --line: #e8d5cd;
+    --ink: #4b3a3e;
+    --ink-2: #5d4a4e;
+    --muted: #8a7377;
+    --accent: #9c6b5e;
+    --accent-dark: #7d4f43;
+    --gold: #b99668;
+    --radius: 18px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    color: var(--ink-2);
+    background:
+      radial-gradient(700px 500px at 10% 6%, rgba(185, 150, 104, .12), transparent 70%),
+      radial-gradient(600px 450px at 92% 30%, rgba(156, 107, 94, .1), transparent 70%),
+      radial-gradient(650px 500px at 14% 88%, rgba(185, 150, 104, .1), transparent 70%),
+      linear-gradient(180deg, var(--paper) 0%, var(--paper-2) 100%);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    font-size: 17px;
+  }
+
+  .page { max-width: 560px; margin: 0 auto; padding: 24px 18px 48px; }
+  .page, main { position: relative; z-index: 1; }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    box-shadow: 0 18px 50px -22px rgba(90, 55, 45, .4);
+    overflow: hidden;
+  }
+  /* ramă dublă, ca pe invitațiile clasice tipărite */
+  .card-inner { border: 1px solid rgba(185, 150, 104, .5); margin: 10px; border-radius: 3px; }
+
+  .hero { text-align: center; padding: 44px 26px 34px; border-bottom: 1px solid var(--line); }
+  .kicker {
+    font-size: 12px; letter-spacing: .34em; text-transform: uppercase;
+    color: var(--gold); margin-bottom: 16px; font-family: inherit; font-weight: 500;
+  }
+  .names {
+    font-family: 'Great Vibes', cursive;
+    font-size: clamp(44px, 12vw, 62px);
+    line-height: 1.15;
+    color: var(--accent-dark);
+    font-weight: 400;
+  }
+  .ornament { font-size: 20px; color: var(--gold); letter-spacing: .5em; margin: 12px 0 2px; }
+  .intro { font-size: 17.5px; line-height: 1.75; color: var(--muted); font-style: italic; max-width: 46ch; margin: 16px auto 0; }
+
+  .section { padding: 28px 26px; border-bottom: 1px solid var(--line); }
+  .section:last-child { border-bottom: 0; }
+  .section-label {
+    text-align: center; font-size: 12px; letter-spacing: .3em; text-transform: uppercase;
+    color: var(--gold); margin-bottom: 18px; font-weight: 500;
+  }
+
+  .countdown { display: flex; justify-content: center; gap: 10px; }
+  .count-box {
+    background: linear-gradient(180deg, #fbf5f0, #f4e9e2);
+    border: 1px solid var(--line); border-radius: 4px;
+    width: 72px; padding: 12px 4px 10px; text-align: center;
+  }
+  .count-box b { display: block; font-size: 27px; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .count-box small { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+
+  .date-display { text-align: center; margin-bottom: 24px; }
+  .date-display .weekday { font-family: 'Great Vibes', cursive; font-size: 30px; color: var(--accent); margin-bottom: 4px; }
+  .date-display .day { font-size: 64px; font-weight: 500; color: var(--ink); line-height: 1; }
+  .date-display .month { font-size: 18px; letter-spacing: .14em; color: var(--muted); margin-top: 8px; }
+
+  .events { display: grid; gap: 14px; }
+  @media (min-width: 768px) { .events { grid-template-columns: 1fr 1fr; } }
+  .event {
+    background: linear-gradient(180deg, #fcf8f4, #f7ede6);
+    border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 20px 16px; text-align: center;
+  }
+  .event .emoji { font-size: 30px; margin-bottom: 8px; }
+  .event h3 { font-size: 13px; letter-spacing: .24em; text-transform: uppercase; color: var(--accent); font-weight: 600; margin-bottom: 8px; }
+  .event .time { font-size: 24px; font-weight: 600; color: var(--ink); }
+  .event .place { font-size: 16.5px; color: var(--ink-2); margin-top: 4px; }
+  .event .addr { font-size: 14px; color: var(--muted); margin-top: 2px; }
+  .event a.map { display: inline-block; margin-top: 10px; font-size: 14px; color: var(--accent-dark); text-decoration: underline; text-underline-offset: 3px; }
+
+  .family { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; text-align: center; }
+  .family h3 { font-size: 12px; letter-spacing: .24em; text-transform: uppercase; color: var(--gold); font-weight: 600; margin-bottom: 6px; }
+  .family p { font-family: 'Great Vibes', cursive; font-size: 26px; color: var(--ink); line-height: 1.3; }
+
+  .note { font-size: 17px; line-height: 1.75; color: var(--muted); text-align: center; font-style: italic; }
+
+  .rsvp-title { font-family: 'Great Vibes', cursive; font-size: 40px; color: var(--accent-dark); text-align: center; margin-bottom: 18px; font-weight: 400; }
+
+  .field { margin-bottom: 18px; }
+  .field label { display: block; font-size: 15px; font-weight: 600; color: var(--ink-2); margin-bottom: 8px; }
+  .field .optional { font-weight: 400; color: var(--muted); font-size: 14px; }
+
+  input[type="text"], select, textarea {
+    width: 100%; font-family: inherit; font-size: 17px; color: var(--ink);
+    background: #fffefc; border: 1.5px solid var(--line); border-radius: 4px;
+    padding: 13px 14px; outline: none; transition: border-color .2s, box-shadow .2s; appearance: none;
+  }
+  textarea { resize: vertical; min-height: 80px; }
+  select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9'%3E%3Cpath d='M1 1l6 6 6-6' stroke='%239c6b5e' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 14px center; padding-right: 40px;
+  }
+  input[type="text"]:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(156, 107, 94, .16); }
+
+  .toggle { display: flex; gap: 10px; }
+  .toggle button {
+    flex: 1; font-family: inherit; font-size: 17px; padding: 12px; border-radius: 4px;
+    border: 1.5px solid var(--line); background: #fffefc; color: var(--muted); cursor: pointer; transition: all .15s;
+  }
+  .toggle button[aria-pressed="true"].yes { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  .toggle button[aria-pressed="true"].no { background: #8a6a70; border-color: #8a6a70; color: #fff; font-weight: 600; }
+
+  .submit-btn {
+    width: 100%; font-family: inherit; font-size: 18px; font-weight: 600; color: #fff;
+    background: linear-gradient(180deg, var(--accent), var(--accent-dark));
+    border: 0; border-radius: 4px; padding: 16px; cursor: pointer;
+    box-shadow: 0 10px 22px -10px rgba(125, 79, 67, .6);
+    transition: transform .12s, box-shadow .2s, opacity .2s;
+    letter-spacing: .04em;
+  }
+  .submit-btn:hover { transform: translateY(-1px); }
+  .submit-btn:disabled { opacity: .6; cursor: wait; }
+
+  .form-error {
+    display: none; background: #faeeea; border: 1px solid #e3c0b4; color: #8c4a2f;
+    font-size: 15px; border-radius: 4px; padding: 12px 14px; margin-bottom: 16px;
+  }
+  .form-error.show { display: block; }
+
+  .success { display: none; text-align: center; padding: 10px 0; }
+  .success.show { display: block; }
+  .success .big { font-size: 52px; margin-bottom: 12px; }
+  .success h2 { font-family: 'Great Vibes', cursive; font-size: 38px; color: var(--accent-dark); margin-bottom: 10px; font-weight: 400; }
+  .success p { color: var(--muted); font-size: 17px; line-height: 1.7; max-width: 40ch; margin: 0 auto 22px; }
+  .success a { color: var(--accent-dark); font-size: 16px; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+
+  footer { text-align: center; font-size: 14.5px; color: var(--ink-2); margin-top: 26px; font-style: italic; }
+  footer span {
+    display: inline-block; background: rgba(255, 253, 251, .85);
+    -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+    border-radius: 999px; padding: 8px 18px;
+  }
+
+  .credit { text-align: center; margin-top: 14px; }
+  .credit a { font-size: 12px; color: var(--muted); opacity: .75; text-decoration: none; font-family: 'Cormorant Garamond', serif; }
+  .credit a:hover { opacity: 1; text-decoration: underline; text-underline-offset: 3px; }
+
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <main class="card">
+   <div class="card-inner">
+
+    <!-- HERO -->
+    <header class="hero">
+      <p class="kicker">Ne căsătorim</p>
+      <h1 class="names">{{nume}}</h1>
+      <p class="ornament" aria-hidden="true">❦</p>
+      <p class="intro">{{introText}}</p>
+    </header>
+
+    <!-- FAMILIA -->
+    <section class="section">
+      <div class="family">
+        <div>
+          <h3>Părinții noștri</h3>
+          <p>{{parinti}}</p>
+        </div>
+        <div>
+          <h3>Nașii noștri</h3>
+          <p>{{nasi}}</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- DATA + COUNTDOWN -->
+    <section class="section" aria-label="Data nunții">
+      <div class="date-display">
+        <div class="weekday">{{ziSaptamana}}</div>
+        <div class="day">{{zi}}</div>
+        <div class="month">{{lunaAn}}</div>
+      </div>
+      <div class="countdown">
+        <div class="count-box"><b id="cd-days">–</b><small>Zile</small></div>
+        <div class="count-box"><b id="cd-hours">–</b><small>Ore</small></div>
+        <div class="count-box"><b id="cd-min">–</b><small>Min</small></div>
+        <div class="count-box"><b id="cd-sec">–</b><small>Sec</small></div>
+      </div>
+    </section>
+
+    <!-- EVENIMENTE -->
+    <section class="section" aria-label="Programul zilei">
+      <p class="section-label">Programul zilei</p>
+      <div class="events">
+        <div class="event">
+          <div class="emoji" aria-hidden="true">💒</div>
+          <h3>Cununia religioasă</h3>
+          <p class="time">{{bisericaOra}}</p>
+          <p class="place">{{bisericaNume}}</p>
+          <p class="addr">{{bisericaAdresa}}</p>
+          <a class="map" href="{{bisericaMaps}}" target="_blank" rel="noopener">Vezi pe hartă</a>
+        </div>
+        <div class="event">
+          <div class="emoji" aria-hidden="true">🥂</div>
+          <h3>Petrecerea</h3>
+          <p class="time">{{petrecereOra}}</p>
+          <p class="place">{{petrecereNume}}</p>
+          <p class="addr">{{petrecereAdresa}}</p>
+          <a class="map" href="{{petrecereMaps}}" target="_blank" rel="noopener">Vezi pe hartă</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- MESAJ -->
+    <section class="section">
+      <p class="note">{{mesajSafari}}</p>
+    </section>
+
+    <!-- GALERIE FOTO -->
+    {{{galerieBlock}}}
+
+    <!-- RSVP -->
+    <section class="section" id="rsvp">
+      <h2 class="rsvp-title">Răspunde invitației</h2>
+
+      <form id="rsvp-form" novalidate>
+        <div class="form-error" id="form-error" role="alert"></div>
+
+        <div class="field">
+          <label for="f-name">Numele tău *</label>
+          <input type="text" id="f-name" name="name" placeholder="Introdu numele complet" autocomplete="name" required>
+        </div>
+
+        <div class="field">
+          <label for="f-persons">Câte persoane vin? *</label>
+          <select id="f-persons" name="persons">
+            <option value="1">1 persoană</option>
+            <option value="2">2 persoane</option>
+            <option value="3">3 persoane</option>
+            <option value="4">4 persoane</option>
+            <option value="5">5 persoane</option>
+            <option value="6">6 persoane</option>
+            <option value="7">7 persoane</option>
+            <option value="8">8 persoane</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label id="lbl-church">Participi la cununie? *</label>
+          <div class="toggle" role="group" aria-labelledby="lbl-church">
+            <button type="button" class="yes" data-group="church" data-val="yes" aria-pressed="true">Da ✓</button>
+            <button type="button" class="no" data-group="church" data-val="no" aria-pressed="false">Nu ✗</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label id="lbl-party">Participi la petrecere? *</label>
+          <div class="toggle" role="group" aria-labelledby="lbl-party">
+            <button type="button" class="yes" data-group="party" data-val="yes" aria-pressed="true">Da ✓</button>
+            <button type="button" class="no" data-group="party" data-val="no" aria-pressed="false">Nu ✗</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="f-message">Mesaj pentru noi <span class="optional">(opțional)</span></label>
+          <textarea id="f-message" name="message" rows="3" maxlength="500" placeholder="Scrie-ne un gând sau o urare…"></textarea>
+        </div>
+
+        <button type="submit" class="submit-btn" id="submit-btn">Confirmă prezența</button>
+      </form>
+
+      <div class="success" id="success">
+        <div class="big" aria-hidden="true">🕊️</div>
+        <h2>Mulțumim pentru confirmare!</h2>
+        <p>Răspunsul tău a ajuns la noi. Abia așteptăm să sărbătorim împreună!</p>
+        <a id="back-link">← Înapoi la invitație</a>
+      </div>
+    </section>
+
+   </div>
+  </main>
+
+  <footer><span>{{footerText}}</span></footer>
+  <p class="credit"><a href="{{baseUrl}}/" target="_blank" rel="noopener">✨ Invitație creată pe momente-dragi.ro</a></p>
+</div>
+
+<!-- MELODIE -->
+{{{muzicaBlock}}}
+
+<script>
+  // ---------- countdown ----------
+  const target = new Date('{{dataISO}}').getTime();
+  const el = {
+    d: document.getElementById('cd-days'),
+    h: document.getElementById('cd-hours'),
+    m: document.getElementById('cd-min'),
+    s: document.getElementById('cd-sec')
+  };
+  function tick() {
+    const diff = target - Date.now();
+    if (diff <= 0) {
+      el.d.textContent = el.h.textContent = el.m.textContent = el.s.textContent = '0';
+      return;
+    }
+    el.d.textContent = Math.floor(diff / 86400000);
+    el.h.textContent = Math.floor(diff / 3600000) % 24;
+    el.m.textContent = Math.floor(diff / 60000) % 60;
+    el.s.textContent = Math.floor(diff / 1000) % 60;
+  }
+  tick();
+  setInterval(tick, 1000);
+
+  // ---------- toggle Da/Nu ----------
+  const answers = { church: true, party: true };
+  document.querySelectorAll('.toggle button').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const group = btn.dataset.group;
+      answers[group] = btn.dataset.val === 'yes';
+      document.querySelectorAll(`.toggle button[data-group="${group}"]`).forEach((b) => {
+        b.setAttribute('aria-pressed', b === btn ? 'true' : 'false');
+      });
+    });
+  });
+
+  // ---------- trimitere formular ----------
+  const form = document.getElementById('rsvp-form');
+  const errBox = document.getElementById('form-error');
+  const successBox = document.getElementById('success');
+  const submitBtn = document.getElementById('submit-btn');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    errBox.classList.remove('show');
+
+    const name = document.getElementById('f-name').value.trim();
+    if (!name) {
+      errBox.textContent = 'Te rog introdu-ți numele!';
+      errBox.classList.add('show');
+      document.getElementById('f-name').focus();
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Se încarcă...';
+
+    try {
+      const res = await fetch('/api/rsvp/{{slug}}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name,
+          persons: document.getElementById('f-persons').value,
+          church: answers.church,
+          party: answers.party,
+          message: document.getElementById('f-message').value.trim()
+        })
+      });
+      if (!res.ok) throw new Error();
+      form.style.display = 'none';
+      successBox.classList.add('show');
+      successBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } catch {
+      errBox.textContent = 'A apărut o eroare. Te rog încearcă din nou.';
+      errBox.classList.add('show');
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Confirmă prezența';
+    }
+  });
+
+  document.getElementById('back-link').addEventListener('click', () => {
+    form.reset();
+    answers.church = answers.party = true;
+    document.querySelectorAll('.toggle button').forEach((b) => {
+      b.setAttribute('aria-pressed', b.classList.contains('yes') ? 'true' : 'false');
+    });
+    successBox.classList.remove('show');
+    form.style.display = '';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+</script>
+</body>
+</html>

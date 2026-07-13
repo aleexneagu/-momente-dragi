@@ -20,8 +20,16 @@ const INVITATIONS_FILE = path.join(DATA_DIR, 'invitatii.json');
 const MESSAGES_FILE = path.join(DATA_DIR, 'mesaje.json');
 const ORDERS_FILE = path.join(DATA_DIR, 'comenzi.json');
 const VIEWS_FILE = path.join(DATA_DIR, 'views.json');
-const TEMPLATE_FILE = path.join(__dirname, 'templates', 'invitatie.html');
 const CONFIRMARI_TEMPLATE_FILE = path.join(__dirname, 'templates', 'confirmari.html');
+
+// fiecare temă are propriul template de invitație
+const TEME = ['safari', 'nunta', 'aniversare'];
+const TEMPLATE_FILES = {
+  safari: path.join(__dirname, 'templates', 'invitatie.html'),
+  nunta: path.join(__dirname, 'templates', 'invitatie-nunta.html'),
+  aniversare: path.join(__dirname, 'templates', 'invitatie-aniversare.html')
+};
+function temaOf(inv) { return TEME.includes(inv.tema) ? inv.tema : 'safari'; }
 
 if (!fs.existsSync(RSVP_DIR)) fs.mkdirSync(RSVP_DIR, { recursive: true });
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
@@ -51,7 +59,7 @@ const RO_LUNI = ['Ianuarie', 'Februarie', 'Martie', 'Aprilie', 'Mai', 'Iunie',
   'Iulie', 'August', 'Septembrie', 'Octombrie', 'Noiembrie', 'Decembrie'];
 
 // slug-uri care nu pot fi folosite de invitații (căi rezervate)
-const RESERVED_SLUGS = ['admin', 'api', 'templates', 'data', 'public', 'demo', 'uploads'];
+const RESERVED_SLUGS = ['admin', 'api', 'templates', 'data', 'public', 'demo', 'demo-nunta', 'demo-aniversare', 'uploads'];
 
 // un singur plan (249 lei) + extra-uri opționale (50 lei fiecare)
 const PRET_BAZA = 249;
@@ -59,9 +67,42 @@ const PRET_EXTRA = 50;
 const MAX_FOTOGRAFII = 6;
 const SLUG_RE = /^[a-z0-9][a-z0-9-]{1,79}$/;
 
-// invitație demonstrativă cu date fictive — arătată vizitatorilor de pe landing la /demo
+// invitații demonstrative cu date fictive — arătate vizitatorilor de pe landing
+const DEMO_INVITATIONS = [
+  {
+    slug: 'demo-nunta',
+    tema: 'nunta',
+    nume: 'Ana & Radu',
+    parinti: 'Elena & Dan · Maria & Ion',
+    nasi: 'Cristina & Andrei',
+    data: '2027-05-29',
+    biserica: { nume: 'Biserica Sfântul Nicolae', adresa: 'Bulevardul Exemplu 5, Cluj-Napoca', ora: '16:00' },
+    petrecere: { nume: 'Domeniul Green Garden', adresa: 'Strada Exemplu 12, Cluj-Napoca', ora: '19:30' },
+    introText: 'După ani în care ne-am construit povestea pas cu pas, a venit momentul să o pecetluim. Am fi onorați să fiți alături de noi în ziua în care spunem „DA".',
+    mesajSafari: 'Vă așteptăm cu emoție, flori, muzică bună și un pahar de șampanie. Prezența voastră e cel mai frumos dar!',
+    footerText: 'Cu drag, Ana & Radu (invitație demonstrativă)',
+    optiuni: { galerie: false, melodie: false }
+  },
+  {
+    slug: 'demo-aniversare',
+    tema: 'aniversare',
+    nume: 'Maria',
+    parinti: 'Ioana & Alex',
+    nasi: '',
+    data: '2027-04-03',
+    biserica: { nume: '', adresa: '', ora: '' },
+    petrecere: { nume: 'Loc de joacă Happy Kids', adresa: 'Strada Exemplu 8, București', ora: '12:00' },
+    introText: 'Micuța noastră Maria împlinește un anișor! Sărbătorim primul ei an de zâmbete, pași mici și bucurii mari — și nu ne putem imagina ziua fără voi.',
+    mesajSafari: 'Vor fi baloane, tort și multă voie bună. Pregătiți-vă de joacă — cei mici (și cei mari) sunt așteptați cu drag!',
+    footerText: 'Cu drag, familia Mariei 🎈 (invitație demonstrativă)',
+    optiuni: { galerie: false, melodie: false }
+  }
+];
+function isDemoSlug(slug) { return slug === DEMO_INVITATION.slug || DEMO_INVITATIONS.some((d) => d.slug === slug); }
+
 const DEMO_INVITATION = {
   slug: 'demo',
+  tema: 'safari',
   nume: 'Sofia Maria',
   parinti: 'Andrei & Ioana',
   nasi: 'Mihai & Elena',
@@ -88,6 +129,8 @@ function loadInvitations() { return readJson(INVITATIONS_FILE, []); }
 function saveInvitations(list) { fs.writeFileSync(INVITATIONS_FILE, JSON.stringify(list, null, 2)); }
 function findInvitation(slug) {
   if (slug === DEMO_INVITATION.slug) return DEMO_INVITATION;
+  const demo = DEMO_INVITATIONS.find((d) => d.slug === slug);
+  if (demo) return demo;
   return loadInvitations().find((i) => i.slug === slug);
 }
 
@@ -290,8 +333,8 @@ function mapsUrl(nume, adresa) {
 }
 
 function renderInvitation(inv) {
-  const template = fs.readFileSync(TEMPLATE_FILE, 'utf8');
-  const d = new Date(inv.data + 'T' + (inv.biserica.ora || '12:00') + ':00');
+  const template = fs.readFileSync(TEMPLATE_FILES[temaOf(inv)], 'utf8');
+  const d = new Date(inv.data + 'T' + (inv.biserica.ora || inv.petrecere.ora || '12:00') + ':00');
   const vars = {
     slug: inv.slug,
     baseUrl: BASE_URL,
@@ -303,7 +346,7 @@ function renderInvitation(inv) {
     zi: String(d.getDate()),
     lunaAn: RO_LUNI[d.getMonth()] + ' · ' + d.getFullYear(),
     dataLunga: d.getDate() + ' ' + RO_LUNI[d.getMonth()] + ' ' + d.getFullYear(),
-    dataISO: inv.data + 'T' + (inv.biserica.ora || '12:00') + ':00',
+    dataISO: inv.data + 'T' + (inv.biserica.ora || inv.petrecere.ora || '12:00') + ':00',
     bisericaNume: inv.biserica.nume,
     bisericaAdresa: inv.biserica.adresa,
     bisericaOra: inv.biserica.ora,
@@ -379,6 +422,7 @@ function sanitizeInvitation(data) {
   });
   const inv = {
     slug: s(data.slug, 80).toLowerCase(),
+    tema: TEME.includes(data.tema) ? data.tema : 'safari',
     nume: s(data.nume, 120),
     parinti: s(data.parinti, 120),
     nasi: s(data.nasi, 120),
@@ -394,12 +438,16 @@ function sanitizeInvitation(data) {
 
   if (!SLUG_RE.test(inv.slug)) return { error: 'Slug invalid — folosește doar litere mici, cifre și cratime.' };
   if (RESERVED_SLUGS.includes(inv.slug)) return { error: 'Acest slug este rezervat.' };
-  if (!inv.nume) return { error: 'Numele copilului este obligatoriu.' };
-  if (!inv.parinti || !inv.nasi) return { error: 'Părinții și nașii sunt obligatorii.' };
+  if (!inv.nume) return { error: 'Numele sărbătoritului este obligatoriu.' };
   if (!/^\d{4}-\d{2}-\d{2}$/.test(inv.data) || isNaN(new Date(inv.data).getTime())) {
     return { error: 'Data este invalidă.' };
   }
-  for (const [eticheta, l] of [['biserică', inv.biserica], ['petrecere', inv.petrecere]]) {
+  // la aniversare, biserica / părinții / nașii sunt opționale — restul temelor le cer pe toate
+  const relaxat = inv.tema === 'aniversare';
+  if (!relaxat && (!inv.parinti || !inv.nasi)) return { error: 'Părinții și nașii sunt obligatorii.' };
+  for (const [eticheta, l, obligatoriu] of [['biserică', inv.biserica, !relaxat], ['petrecere', inv.petrecere, true]]) {
+    const completat = l.nume || l.adresa || l.ora;
+    if (!obligatoriu && !completat) continue;
     if (!l.nume || !l.adresa) return { error: `Completează numele și adresa pentru ${eticheta}.` };
     if (!/^\d{2}:\d{2}$/.test(l.ora)) return { error: `Ora pentru ${eticheta} este invalidă (format HH:MM).` };
   }
@@ -558,7 +606,7 @@ const server = http.createServer(async (req, res) => {
     if (!canManageRsvps(req, inv)) return sendJson(res, 401, { error: 'Parolă incorectă' });
     return sendJson(res, 200, {
       rsvps: readRsvps(parts[2]),
-      views: inv.slug === DEMO_INVITATION.slug ? 0 : (readViews()[inv.slug] || 0)
+      views: isDemoSlug(inv.slug) ? 0 : (readViews()[inv.slug] || 0)
     });
   }
 
@@ -786,7 +834,7 @@ const server = http.createServer(async (req, res) => {
     if (parts.length === 1 && !parts[0].includes('.')) {
       const inv = findInvitation(parts[0]);
       if (inv) {
-        if (req.method === 'GET' && inv.slug !== DEMO_INVITATION.slug) countView(inv.slug);
+        if (req.method === 'GET' && !isDemoSlug(inv.slug)) countView(inv.slug);
         return sendHtml(res, 200, renderInvitation(inv));
       }
       return sendHtml(res, 404, NOT_FOUND_PAGE);

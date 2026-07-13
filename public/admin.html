@@ -354,6 +354,14 @@
             <input type="text" id="i-parola" placeholder="ex: familia-sofia-2026" autocomplete="off">
           </div>
           <div>
+            <label for="i-tema">Temă <small>— designul invitației; la Aniversare, biserica/părinții/nașii devin opționale</small></label>
+            <select id="i-tema">
+              <option value="safari">🦁 Botez · Safari</option>
+              <option value="nunta">💍 Nuntă · eleganță clasică</option>
+              <option value="aniversare">🎈 Aniversare · veselă</option>
+            </select>
+          </div>
+          <div>
             <label>Extra-uri incluse <small>— ce a cumpărat clientul (50 lei fiecare)</small></label>
             <div class="op-checks">
               <label class="op-check"><input type="checkbox" id="i-op-galerie"> 📸 Galerie foto</label>
@@ -679,6 +687,7 @@
     $('i-mesaj').value = inv ? inv.mesajSafari : DEFAULT_MESAJ;
     $('i-footer').value = inv ? inv.footerText : '';
     $('i-parola').value = inv ? (inv.parolaAdmin || '') : '';
+    $('i-tema').value = inv && ['safari', 'nunta', 'aniversare'].includes(inv.tema) ? inv.tema : 'safari';
     const op = inv ? optiuniOf(inv) : { galerie: false, melodie: false };
     $('i-op-galerie').checked = op.galerie;
     updateFotoSection();
@@ -789,6 +798,7 @@
     errBox.classList.remove('show');
     const payload = {
       slug: $('i-slug').value.trim(),
+      tema: $('i-tema').value,
       nume: $('i-nume').value.trim(),
       parinti: $('i-parinti').value.trim(),
       nasi: $('i-nasi').value.trim(),
@@ -932,6 +942,7 @@
     $('i-data').value = o.data || '';
     $('i-bis-nume').value = o.biserica || '';
     $('i-pet-nume').value = o.petrecere || '';
+    $('i-tema').value = { botez: 'safari', nunta: 'nunta', aniversare: 'aniversare' }[o.tipEveniment] || 'safari';
     $('i-op-galerie').checked = !!(o.extras && o.extras.galerie);
     updateFotoSection();
     $('form-title').textContent = 'Invitație din comanda lui ' + o.contactNume + (o.pret ? ' — ' + o.pret + ' lei' : '');

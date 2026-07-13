@@ -323,6 +323,7 @@
     display: flex; flex-direction: column; align-items: center; gap: 8px;
     box-shadow: 0 20px 45px -25px rgba(40, 62, 68, .4);
     transition: transform .2s;
+    text-decoration: none;
   }
   .ex-card:hover .ex-preview { transform: translateY(-4px); }
   .ex-kicker { font-size: 11px; letter-spacing: .26em; text-transform: uppercase; opacity: .75; }
@@ -342,8 +343,6 @@
   .ex-aniversare { background: linear-gradient(135deg, #fdf1f5, #eef5fd 55%, #fdf8ea); color: #44506b; border: 1px solid #ead9e2; }
   .ex-aniversare .ex-btn { background: #e0729b; color: #fff; }
   .ex-tag { margin-top: 14px; font-size: 14.5px; color: var(--ink); }
-  .ex-link { display: inline-block; margin-top: 4px; font-size: 13.5px; color: var(--rose-dark); text-decoration: underline; text-underline-offset: 3px; }
-  .ex-link.muted { color: var(--muted); text-decoration: none; font-style: italic; }
 
   /* ---------- prețuri ---------- */
   .plans { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; align-items: stretch; }
@@ -626,37 +625,34 @@
   </div>
   <div class="ex-grid">
     <div class="ex-card reveal">
-      <div class="ex-preview ex-safari">
+      <a class="ex-preview ex-safari" href="/demo">
         <p class="ex-kicker">Sfântul Botez</p>
         <p class="ex-nume ex-script">Sofia Maria</p>
         <p class="ex-emoji">🦁 🦒 🐘</p>
         <p class="ex-data">17 octombrie 2026</p>
-        <span class="ex-btn">Confirmă prezența</span>
-      </div>
+        <span class="ex-btn">Deschide invitația completă ✨</span>
+      </a>
       <p class="ex-tag"><b>Botez · tema Safari</b></p>
-      <a class="ex-link" href="/demo">Deschide invitația completă ✨</a>
     </div>
     <div class="ex-card reveal" style="transition-delay:.1s">
-      <div class="ex-preview ex-nunta">
-        <p class="ex-kicker">Ne căsătorim!</p>
+      <a class="ex-preview ex-nunta" href="/demo-nunta">
+        <p class="ex-kicker">Ne căsătorim</p>
         <p class="ex-nume ex-serif">Ana <i>&amp;</i> Radu</p>
         <p class="ex-emoji">🕊️</p>
         <p class="ex-data">29 mai 2027</p>
-        <span class="ex-btn">Confirmă prezența</span>
-      </div>
+        <span class="ex-btn">Deschide invitația completă ✨</span>
+      </a>
       <p class="ex-tag"><b>Nuntă · eleganță clasică</b></p>
-      <span class="ex-link muted">direcție de design — a voastră va fi unică</span>
     </div>
     <div class="ex-card reveal" style="transition-delay:.2s">
-      <div class="ex-preview ex-aniversare">
+      <a class="ex-preview ex-aniversare" href="/demo-aniversare">
         <p class="ex-kicker">Prima aniversare</p>
         <p class="ex-nume ex-script">Maria face 1 an</p>
         <p class="ex-emoji">🎈 🎂 🎈</p>
         <p class="ex-data">3 aprilie 2027</p>
-        <span class="ex-btn">Confirmă prezența</span>
-      </div>
+        <span class="ex-btn">Deschide invitația completă ✨</span>
+      </a>
       <p class="ex-tag"><b>Aniversare · veselă și colorată</b></p>
-      <span class="ex-link muted">direcție de design — a voastră va fi unică</span>
     </div>
   </div>
 </section>
