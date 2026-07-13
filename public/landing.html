@@ -635,7 +635,7 @@
       </ul>
       <div class="extras">
         <p class="extras-title">Extra opționale — 50 lei fiecare:</p>
-        <p class="extras-list">📸 galerie cu fotografiile voastre &nbsp;·&nbsp; 🎵 melodia voastră pe invitație &nbsp;·&nbsp; ⚡ gata în 24 de ore</p>
+        <p class="extras-list">📸 galerie cu fotografiile voastre &nbsp;·&nbsp; ⚡ gata în 24 de ore</p>
       </div>
       <button type="button" class="plan-cta" data-order="1">Comandă invitația 🎉</button>
     </div>
@@ -681,7 +681,6 @@
         <label>Extra opționale <small>(50 lei fiecare)</small></label>
         <div class="extra-checks">
           <label class="extra-check"><input type="checkbox" id="x-galerie"> <span class="xtxt">📸 Galerie cu fotografiile voastre</span> <span class="xprice">+50 lei</span></label>
-          <label class="extra-check"><input type="checkbox" id="x-melodie"> <span class="xtxt">🎵 Melodia voastră pe invitație</span> <span class="xprice">+50 lei</span></label>
           <label class="extra-check"><input type="checkbox" id="x-livrare"> <span class="xtxt">⚡ Gata în 24 de ore</span> <span class="xprice">+50 lei</span></label>
         </div>
 
@@ -839,10 +838,10 @@
 
   // totalul comenzii: 249 lei + 50 lei / extra bifat
   function updateTotal() {
-    const extra = ['x-galerie', 'x-melodie', 'x-livrare'].filter((id) => document.getElementById(id).checked).length;
+    const extra = ['x-galerie', 'x-livrare'].filter((id) => document.getElementById(id).checked).length;
     orderSend.textContent = 'Trimite comanda — ' + (249 + 50 * extra) + ' lei 🎉';
   }
-  ['x-galerie', 'x-melodie', 'x-livrare'].forEach((id) => {
+  ['x-galerie', 'x-livrare'].forEach((id) => {
     document.getElementById(id).addEventListener('change', updateTotal);
   });
   updateTotal();
@@ -872,7 +871,6 @@
         body: JSON.stringify({
           extras: {
             galerie: document.getElementById('x-galerie').checked,
-            melodie: document.getElementById('x-melodie').checked,
             livrare24h: document.getElementById('x-livrare').checked
           },
           tipEveniment,

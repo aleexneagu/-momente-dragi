@@ -357,7 +357,6 @@
             <label>Extra-uri incluse <small>— ce a cumpărat clientul (50 lei fiecare)</small></label>
             <div class="op-checks">
               <label class="op-check"><input type="checkbox" id="i-op-galerie"> 📸 Galerie foto</label>
-              <label class="op-check"><input type="checkbox" id="i-op-melodie"> 🎵 Melodie</label>
             </div>
           </div>
           <fieldset class="fset" id="foto-set" style="display:none">
@@ -366,15 +365,6 @@
             <div class="foto-grid" id="foto-grid"></div>
             <input type="file" id="foto-input" accept="image/jpeg,image/png,image/webp" multiple style="display:none">
             <button class="btn-outline" id="foto-add" type="button">➕ Adaugă fotografii</button>
-          </fieldset>
-          <fieldset class="fset" id="muzica-set" style="display:none">
-            <legend>🎵 Melodie</legend>
-            <p class="foto-hint" id="muzica-hint"></p>
-            <input type="file" id="muzica-input" accept="audio/mpeg,.mp3" style="display:none">
-            <div style="display:flex; gap:8px; flex-wrap:wrap;">
-              <button class="btn-outline" id="muzica-add" type="button">🎵 Încarcă melodia (MP3)</button>
-              <button class="btn-outline danger" id="muzica-del" type="button" style="display:none">🗑️ Șterge melodia</button>
-            </div>
           </fieldset>
           <div class="form-foot">
             <button class="btn-outline" id="form-cancel">Renunță</button>
@@ -548,7 +538,7 @@
       dt.className = 'inv-date';
       dt.textContent = '📅 ' + formatDate(inv.data);
       const op = optiuniOf(inv);
-      [op.galerie && '📸 galerie', op.melodie && '🎵 melodie'].filter(Boolean).forEach((t) => {
+      [op.galerie && '📸 galerie'].filter(Boolean).forEach((t) => {
         const pk = document.createElement('span');
         pk.className = 'inv-pachet';
         pk.textContent = t;
@@ -691,9 +681,7 @@
     $('i-parola').value = inv ? (inv.parolaAdmin || '') : '';
     const op = inv ? optiuniOf(inv) : { galerie: false, melodie: false };
     $('i-op-galerie').checked = op.galerie;
-    $('i-op-melodie').checked = op.melodie;
     updateFotoSection();
-    updateMuzicaSection();
     show('view-form');
   }
 
@@ -713,56 +701,6 @@
     renderFotoGrid();
   }
 
-  // ---------- melodie (pachet Premium) ----------
-  function updateMuzicaSection() {
-    const areMelodie = $('i-op-melodie').checked;
-    $('muzica-set').style.display = areMelodie ? 'block' : 'none';
-    if (!areMelodie) return;
-    if (!editingSlug) {
-      $('muzica-hint').textContent = 'Salvează întâi invitația, apoi revino la Editează ca să încarci melodia.';
-      $('muzica-add').style.display = 'none';
-      $('muzica-del').style.display = 'none';
-      return;
-    }
-    const are = !!(editingInv && editingInv.melodie);
-    $('muzica-hint').textContent = are
-      ? '✓ Melodie încărcată — pe invitație apare butonul 🎵 de redare. Poți încărca alta în loc.'
-      : 'Un MP3 de maxim 8 MB — invitații îl pornesc cu butonul 🎵 de pe invitație.';
-    $('muzica-add').style.display = 'inline-block';
-    $('muzica-del').style.display = are ? 'inline-block' : 'none';
-  }
-
-  $('muzica-add').addEventListener('click', () => $('muzica-input').click());
-  $('muzica-input').addEventListener('change', () => {
-    const f = $('muzica-input').files[0];
-    $('muzica-input').value = '';
-    if (!f || !editingSlug) return;
-    if (f.size > 8_000_000) { alert('Melodia depășește 8 MB — exportă o variantă mai mică.'); return; }
-    const reader = new FileReader();
-    reader.onload = async () => {
-      $('muzica-add').disabled = true;
-      $('muzica-add').textContent = '⏳ Se încarcă…';
-      try {
-        const r = await api('/api/admin/invitations/' + encodeURIComponent(editingSlug) + '/melodie', {
-          method: 'POST',
-          body: JSON.stringify({ audio: reader.result })
-        });
-        editingInv.melodie = r.melodie;
-        updateMuzicaSection();
-      } catch (e) { alert(e.message); }
-      $('muzica-add').disabled = false;
-      $('muzica-add').textContent = '🎵 Încarcă melodia (MP3)';
-    };
-    reader.readAsDataURL(f);
-  });
-  $('muzica-del').addEventListener('click', async () => {
-    if (!confirm('Ștergi melodia de pe invitație?')) return;
-    try {
-      await api('/api/admin/invitations/' + encodeURIComponent(editingSlug) + '/melodie', { method: 'DELETE' });
-      delete editingInv.melodie;
-      updateMuzicaSection();
-    } catch (e) { alert(e.message); }
-  });
 
   function renderFotoGrid() {
     const grid = $('foto-grid');
@@ -811,7 +749,6 @@
   }
 
   $('i-op-galerie').addEventListener('change', updateFotoSection);
-  $('i-op-melodie').addEventListener('change', updateMuzicaSection);
   $('foto-add').addEventListener('click', () => $('foto-input').click());
   $('foto-input').addEventListener('change', async (e) => {
     const files = [...e.target.files];
@@ -862,7 +799,8 @@
       mesajSafari: $('i-mesaj').value.trim(),
       footerText: $('i-footer').value.trim(),
       parolaAdmin: $('i-parola').value.trim(),
-      optiuni: { galerie: $('i-op-galerie').checked, melodie: $('i-op-melodie').checked }
+      // melodie: se păstrează valoarea existentă — opțiunea nu se mai vinde, dar invitațiile vechi rămân valabile
+      optiuni: { galerie: $('i-op-galerie').checked, melodie: editingInv ? optiuniOf(editingInv).melodie : false }
     };
     try {
       if (editingSlug) {
@@ -995,9 +933,7 @@
     $('i-bis-nume').value = o.biserica || '';
     $('i-pet-nume').value = o.petrecere || '';
     $('i-op-galerie').checked = !!(o.extras && o.extras.galerie);
-    $('i-op-melodie').checked = !!(o.extras && o.extras.melodie);
     updateFotoSection();
-    updateMuzicaSection();
     $('form-title').textContent = 'Invitație din comanda lui ' + o.contactNume + (o.pret ? ' — ' + o.pret + ' lei' : '');
   }
 
