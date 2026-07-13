@@ -366,7 +366,8 @@
   .plan .checks { list-style: none; display: grid; gap: 9px; margin: 14px 0 22px; flex: 1; }
   .plan .checks li { font-size: 14px; color: var(--ink-soft); padding-left: 24px; position: relative; line-height: 1.5; }
   .plan .checks li::before { content: '✓'; position: absolute; left: 0; color: var(--rose); font-weight: 700; }
-  .plan .checks li.plus { font-weight: 600; color: var(--ink); }
+  .plan .checks li.no { color: var(--muted); opacity: .55; text-decoration: line-through; text-decoration-thickness: 1px; }
+  .plan .checks li.no::before { content: '✕'; color: var(--muted); font-weight: 400; }
   .plan-cta {
     font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer;
     border-radius: 999px; padding: 13px 18px; text-align: center; transition: all .15s;
@@ -606,11 +607,16 @@
       <div class="price">149 <small>lei</small></div>
       <div class="price-note">plată unică, fără abonament</div>
       <ul class="checks">
-        <li>Invitație personalizată, cu design tematic</li>
-        <li>Link propriu: momente-dragi.ro/evenimentul-tău</li>
+        <li>Invitație personalizată, cu link propriu</li>
         <li>Confirmări online (RSVP) nelimitate</li>
         <li>Programul zilei, cu locațiile pe hartă</li>
         <li>Pagină privată cu lista confirmărilor</li>
+        <li class="no">Galerie foto cu pozele voastre</li>
+        <li class="no">Modificări nelimitate până la eveniment</li>
+        <li class="no">Temă adaptată culorilor și poveștii voastre</li>
+        <li class="no">Statistici: câți au văzut invitația</li>
+        <li class="no">Lista invitaților exportabilă în Excel</li>
+        <li class="no">Suport prioritar pe WhatsApp</li>
       </ul>
       <button type="button" class="plan-cta" data-order="simplu">Alege Simplu</button>
     </div>
@@ -620,11 +626,16 @@
       <div class="price">249 <small>lei</small></div>
       <div class="price-note">plată unică, fără abonament</div>
       <ul class="checks">
-        <li class="plus">Tot ce include Simplu, plus:</li>
-        <li>Galerie cu fotografiile voastre pe invitație</li>
-        <li>Countdown până în ziua cea mare</li>
+        <li>Invitație personalizată, cu link propriu</li>
+        <li>Confirmări online (RSVP) nelimitate</li>
+        <li>Programul zilei, cu locațiile pe hartă</li>
+        <li>Pagină privată cu lista confirmărilor</li>
+        <li>Galerie foto cu pozele voastre</li>
         <li>Modificări nelimitate până la eveniment</li>
-        <li>Mesajele și urările invitaților, adunate într-un loc</li>
+        <li class="no">Temă adaptată culorilor și poveștii voastre</li>
+        <li class="no">Statistici: câți au văzut invitația</li>
+        <li class="no">Lista invitaților exportabilă în Excel</li>
+        <li class="no">Suport prioritar pe WhatsApp</li>
       </ul>
       <button type="button" class="plan-cta" data-order="complet">Alege Complet</button>
     </div>
@@ -633,11 +644,16 @@
       <div class="price">399 <small>lei</small></div>
       <div class="price-note">plată unică, fără abonament</div>
       <ul class="checks">
-        <li class="plus">Tot ce include Complet, plus:</li>
+        <li>Invitație personalizată, cu link propriu</li>
+        <li>Confirmări online (RSVP) nelimitate</li>
+        <li>Programul zilei, cu locațiile pe hartă</li>
+        <li>Pagină privată cu lista confirmărilor</li>
+        <li>Galerie foto cu pozele voastre</li>
+        <li>Modificări nelimitate până la eveniment</li>
         <li>Temă adaptată culorilor și poveștii voastre</li>
-        <li>Statistici: câți invitați au văzut invitația</li>
+        <li>Statistici: câți au văzut invitația</li>
         <li>Lista invitaților exportabilă în Excel</li>
-        <li>Suport prioritar, direct pe WhatsApp</li>
+        <li>Suport prioritar pe WhatsApp</li>
       </ul>
       <button type="button" class="plan-cta" data-order="premium">Alege Premium</button>
     </div>
