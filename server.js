@@ -10,6 +10,7 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'milan2026';
 const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
 const NOTIFY_EMAIL = process.env.NOTIFY_EMAIL || '';
 const NOTIFY_FROM = process.env.NOTIFY_FROM || 'onboarding@resend.dev';
+const BASE_URL = process.env.BASE_URL || 'https://momente-dragi.ro';
 
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
@@ -158,20 +159,63 @@ function sanitizeOrder(data) {
 
 // fire-and-forget: nu blochează răspunsul către vizitator, iar o eroare de email
 // nu afectează salvarea mesajului
-function sendNotification(subject, html) {
+function sendEmail(to, subject, html, attachments) {
   if (!RESEND_API_KEY || !NOTIFY_EMAIL || typeof fetch !== 'function') return;
+  const payload = { from: NOTIFY_FROM, to: [to], subject, html, reply_to: NOTIFY_EMAIL };
+  if (attachments) payload.attachments = attachments;
   fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
       'Authorization': 'Bearer ' + RESEND_API_KEY,
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ from: NOTIFY_FROM, to: [NOTIFY_EMAIL], subject, html })
+    body: JSON.stringify(payload)
   }).then(async (r) => {
-    if (!r.ok) console.error('Notificare email eșuată:', r.status, await r.text().catch(() => ''));
+    if (!r.ok) console.error('Email eșuat către ' + to + ':', r.status, await r.text().catch(() => ''));
   }).catch((err) => {
-    console.error('Notificare email eșuată:', err.message);
+    console.error('Email eșuat către ' + to + ':', err.message);
   });
+}
+
+function sendNotification(subject, html) { sendEmail(NOTIFY_EMAIL, subject, html); }
+
+// ---------- backup zilnic ----------
+
+const LAST_BACKUP_FILE = path.join(DATA_DIR, 'last-backup.txt');
+
+// o dată pe zi, toate datele (fără fotografii) pleacă pe email ca fișier JSON atașat
+function maybeDailyBackup() {
+  if (!RESEND_API_KEY || !NOTIFY_EMAIL) return;
+  const today = new Date().toISOString().slice(0, 10);
+  let last = '';
+  try { last = fs.readFileSync(LAST_BACKUP_FILE, 'utf8').trim(); } catch {}
+  if (last === today) return;
+  try { fs.writeFileSync(LAST_BACKUP_FILE, today); } catch {}
+  try {
+    const confirmari = {};
+    for (const f of fs.readdirSync(RSVP_DIR)) {
+      if (f.endsWith('.json')) confirmari[f.replace(/\.json$/, '')] = readJson(path.join(RSVP_DIR, f), []);
+    }
+    const bundle = {
+      exportatLa: new Date().toISOString(),
+      invitatii: loadInvitations(),
+      confirmari,
+      comenzi: readOrders(),
+      mesaje: readMessages(),
+      vizualizari: readViews()
+    };
+    const nrConfirmari = Object.values(confirmari).reduce((s, l) => s + l.length, 0);
+    sendEmail(NOTIFY_EMAIL, `Backup momente-dragi.ro — ${today}`, `
+      <div style="font-family:sans-serif">
+        <p>Backupul zilnic al datelor: <strong>${bundle.invitatii.length} invitații</strong>,
+        <strong>${nrConfirmari} confirmări</strong>, ${bundle.comenzi.length} comenzi, ${bundle.mesaje.length} mesaje.</p>
+        <p style="color:#888;font-size:13px">Păstrează emailul — fișierul atașat e suficient pentru a reconstrui datele (fotografiile nu sunt incluse).</p>
+      </div>`,
+      [{ filename: `backup-momente-dragi-${today}.json`, content: Buffer.from(JSON.stringify(bundle, null, 2)).toString('base64') }]);
+    console.log('Backup zilnic trimis:', today);
+  } catch (err) {
+    console.error('Backup eșuat:', err.message);
+  }
 }
 
 function notifyNewContactMessage(msg) {
@@ -215,6 +259,21 @@ function notifyNewOrder(order) {
     </div>`);
 }
 
+// confirmare automată către client, dacă a lăsat un email
+// (pe planul gratuit Resend fără domeniu verificat, livrarea către alte adrese e blocată —
+// se activează de la sine după verificarea domeniului)
+function confirmOrderToClient(order) {
+  if (!order.contact.includes('@')) return;
+  sendEmail(order.contact, 'Am primit comanda ta — Momente Dragi ✨', `
+    <div style="font-family:sans-serif;max-width:540px">
+      <h2 style="margin:0 0 12px">Mulțumim, ${escapeHtml(order.contactNume)}! 🎉</h2>
+      <p>Am primit comanda ta pentru <strong>${TIP_LABEL[order.tipEveniment].toLowerCase()}</strong> și ne apucăm de invitație.</p>
+      <p><strong>Revenim în maximum 24 de ore</strong> cu invitația pregătită și pașii următori. Nu plătești nimic până nu vezi și aprobi invitația.</p>
+      <p style="color:#888;font-size:13px">Dacă ai uitat să ne spui ceva, răspunde direct la acest email.</p>
+      <p style="margin-top:18px">Cu drag,<br>Momente Dragi · <a href="${BASE_URL}">momente-dragi.ro</a></p>
+    </div>`);
+}
+
 // ---------- randare invitație ----------
 
 function escapeHtml(s) {
@@ -235,6 +294,7 @@ function renderInvitation(inv) {
   const d = new Date(inv.data + 'T' + (inv.biserica.ora || '12:00') + ':00');
   const vars = {
     slug: inv.slug,
+    baseUrl: BASE_URL,
     nume: inv.nume,
     introText: inv.introText,
     parinti: inv.parinti,
@@ -368,6 +428,26 @@ function canManageRsvps(req, inv) {
   return !!(inv && inv.parolaAdmin && req.headers['x-admin-password'] === inv.parolaAdmin);
 }
 
+// ---------- anti-spam ----------
+
+// limită simplă de cereri pe IP, ținută în memorie (se golește la restart — suficient contra abuzului)
+const RATE_BUCKETS = new Map();
+function rateLimited(req, key, max, windowMs = 600_000) {
+  const ip = String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '?').split(',')[0].trim();
+  const bucketKey = key + '|' + ip;
+  const now = Date.now();
+  const hits = (RATE_BUCKETS.get(bucketKey) || []).filter((t) => now - t < windowMs);
+  hits.push(now);
+  RATE_BUCKETS.set(bucketKey, hits);
+  if (RATE_BUCKETS.size > 10_000) RATE_BUCKETS.clear(); // plasă de siguranță contra creșterii memoriei
+  return hits.length > max;
+}
+
+// câmpul-capcană din formulare: oamenii nu-l văd, boții îl completează
+function isHoneypotTripped(data) {
+  return !!String(data.website || '').trim();
+}
+
 function readBody(req, maxSize = 100_000) {
   return new Promise((resolve, reject) => {
     let body = '';
@@ -400,6 +480,7 @@ const server = http.createServer(async (req, res) => {
   if (req.method === 'POST' && parts[0] === 'api' && parts[1] === 'rsvp' && parts.length === 3) {
     const slug = parts[2];
     if (!findInvitation(slug)) return sendJson(res, 404, { error: 'Invitația nu există' });
+    if (rateLimited(req, 'rsvp', 15)) return sendJson(res, 429, { error: 'Prea multe încercări — reîncearcă peste câteva minute.' });
     try {
       const data = JSON.parse(await readBody(req));
       const name = String(data.name || '').trim().slice(0, 120);
@@ -426,7 +507,9 @@ const server = http.createServer(async (req, res) => {
   // POST /api/contact
   if (req.method === 'POST' && parts[0] === 'api' && parts[1] === 'contact' && parts.length === 2) {
     try {
+      if (rateLimited(req, 'contact', 5)) return sendJson(res, 429, { error: 'Prea multe mesaje — încearcă din nou peste câteva minute.' });
       const data = JSON.parse(await readBody(req));
+      if (isHoneypotTripped(data)) return sendJson(res, 200, { ok: true }); // botul crede că a reușit
       const name = String(data.name || '').trim().slice(0, 120);
       const contact = String(data.contact || '').trim().slice(0, 160);
       const message = String(data.message || '').trim().slice(0, 1000);
@@ -448,7 +531,10 @@ const server = http.createServer(async (req, res) => {
   // POST /api/comanda
   if (req.method === 'POST' && parts[0] === 'api' && parts[1] === 'comanda' && parts.length === 2) {
     try {
-      const { order, error } = sanitizeOrder(JSON.parse(await readBody(req)));
+      if (rateLimited(req, 'comanda', 5)) return sendJson(res, 429, { error: 'Prea multe comenzi — încearcă din nou peste câteva minute.' });
+      const data = JSON.parse(await readBody(req));
+      if (isHoneypotTripped(data)) return sendJson(res, 200, { ok: true });
+      const { order, error } = sanitizeOrder(data);
       if (error) return sendJson(res, 400, { error });
       order.id = crypto.randomUUID();
       order.createdAt = new Date().toISOString();
@@ -456,6 +542,7 @@ const server = http.createServer(async (req, res) => {
       orders.push(order);
       writeOrders(orders);
       notifyNewOrder(order);
+      confirmOrderToClient(order);
       return sendJson(res, 200, { ok: true });
     } catch {
       return sendJson(res, 400, { error: 'A apărut o eroare. Încearcă din nou.' });
@@ -727,4 +814,7 @@ server.listen(PORT, () => {
   for (const inv of loadInvitations()) {
     console.log(`Invitație: http://localhost:${PORT}/${inv.slug} — ${inv.nume} (confirmări: /${inv.slug}/admin)`);
   }
+  // backup zilnic: la scurt timp după pornire și apoi verificat din oră în oră
+  setTimeout(maybeDailyBackup, 30_000);
+  setInterval(maybeDailyBackup, 3_600_000);
 });

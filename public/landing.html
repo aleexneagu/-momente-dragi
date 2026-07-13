@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Momente Dragi — Invitații digitale pentru evenimente speciale</title>
 <meta name="description" content="Invitații digitale pentru botez, nuntă, aniversări și alte evenimente speciale — design tematic, link personalizat și confirmări online în timp real.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Momente Dragi ✨ Invitații digitale cu confirmare online">
+<meta property="og:description" content="Design creat special pentru evenimentul vostru, link personalizat și confirmări în timp real — 249 lei, totul inclus.">
+<meta property="og:image" content="https://momente-dragi.ro/safaritema.jpg">
+<meta property="og:url" content="https://momente-dragi.ro/">
+<meta property="og:locale" content="ro_RO">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -306,6 +313,38 @@
   footer a { color: var(--muted); text-decoration: none; }
   footer a:hover { color: var(--rose-dark); }
 
+  /* ---------- exemple ---------- */
+  .ex-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  @media (max-width: 820px) { .ex-grid { grid-template-columns: 1fr; max-width: 380px; margin: 0 auto; } }
+  .ex-card { text-align: center; }
+  .ex-preview {
+    border-radius: 22px;
+    padding: 34px 18px 28px;
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    box-shadow: 0 20px 45px -25px rgba(40, 62, 68, .4);
+    transition: transform .2s;
+  }
+  .ex-card:hover .ex-preview { transform: translateY(-4px); }
+  .ex-kicker { font-size: 11px; letter-spacing: .26em; text-transform: uppercase; opacity: .75; }
+  .ex-nume.ex-script { font-family: 'Caveat', cursive; font-size: 38px; font-weight: 700; line-height: 1.05; }
+  .ex-nume.ex-serif { font-family: 'Fraunces', Georgia, serif; font-size: 30px; font-weight: 600; line-height: 1.1; letter-spacing: .01em; }
+  .ex-nume.ex-serif i { font-style: italic; opacity: .7; font-size: 24px; }
+  .ex-emoji { font-size: 20px; letter-spacing: .3em; margin: 2px 0; }
+  .ex-data { font-size: 13px; letter-spacing: .08em; opacity: .8; }
+  .ex-btn {
+    margin-top: 10px; font-size: 12.5px; font-weight: 600;
+    border-radius: 999px; padding: 8px 18px;
+  }
+  .ex-safari { background: linear-gradient(180deg, #f8f3e8, #efe3cb); color: #4a3c2e; border: 1px solid #e3d4b6; }
+  .ex-safari .ex-btn { background: #6f7d43; color: #fff; }
+  .ex-nunta { background: linear-gradient(180deg, #fbf7f4, #f3e7e2); color: #4b3a3e; border: 1px solid #e8d5cd; }
+  .ex-nunta .ex-btn { background: #9c6b5e; color: #fff; }
+  .ex-aniversare { background: linear-gradient(135deg, #fdf1f5, #eef5fd 55%, #fdf8ea); color: #44506b; border: 1px solid #ead9e2; }
+  .ex-aniversare .ex-btn { background: #e0729b; color: #fff; }
+  .ex-tag { margin-top: 14px; font-size: 14.5px; color: var(--ink); }
+  .ex-link { display: inline-block; margin-top: 4px; font-size: 13.5px; color: var(--rose-dark); text-decoration: underline; text-underline-offset: 3px; }
+  .ex-link.muted { color: var(--muted); text-decoration: none; font-style: italic; }
+
   /* ---------- prețuri ---------- */
   .plans { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; align-items: stretch; }
   @media (max-width: 820px) { .plans { grid-template-columns: 1fr; max-width: 420px; margin: 0 auto; } }
@@ -514,6 +553,9 @@
       elegantă, cu povestea voastră, programul zilei și confirmare de prezență online.
       Totul într-un link pe care îl trimiți pe WhatsApp în câteva secunde.
     </p>
+    <div class="cta-row">
+      <button type="button" class="btn-primary" data-order="1">Comandă invitația 🎉</button>
+    </div>
   </div>
 
   <div class="phone-zone">
@@ -545,34 +587,76 @@
   </div>
   <div class="steps">
     <div class="step reveal">
-      <div class="ico">🎨</div>
-      <h3>Se creează invitația, cu design tematic</h3>
-      <p>Detaliile evenimentului prind viață într-un design elegant, gândit pentru mobil.</p>
+      <div class="ico">🖋️</div>
+      <h3>Ne spui povestea voastră</h3>
+      <p>Completezi formularul de comandă în 5 minute — restul e treaba noastră.</p>
       <ul class="checks">
-        <li>Temă dedicată tipului de eveniment</li>
-        <li>Povestea voastră și programul zilei</li>
-        <li>Locațiile, cu hartă la un click</li>
+        <li>Tipul evenimentului și data</li>
+        <li>Numele dragi: sărbătoritul, părinții, nașii</li>
+        <li>Locațiile și orice detaliu contează pentru voi</li>
       </ul>
     </div>
     <div class="step reveal" style="transition-delay:.1s">
-      <div class="ico">💌</div>
-      <h3>Trimiți linkul personalizat</h3>
-      <p>Invitația primește adresa ei — <b>momente-dragi.ro/evenimentul-tău</b> — gata de trimis oriunde.</p>
+      <div class="ico">🎨</div>
+      <h3>Creăm designul, special pentru voi</h3>
+      <p>În cel mult 48 de ore primești invitația gata de trimis — <b>momente-dragi.ro/evenimentul-tău</b>.</p>
       <ul class="checks">
-        <li>Se deschide instant pe orice telefon</li>
-        <li>WhatsApp, SMS sau e-mail</li>
-        <li>Fără tipar, fără plicuri</li>
+        <li>Culorile și elementele grafice ale poveștii voastre</li>
+        <li>Modificări nelimitate până e exact cum o visați</li>
+        <li>Plătești doar după ce o vezi și o aprobi</li>
       </ul>
     </div>
     <div class="step reveal" style="transition-delay:.2s">
       <div class="ico">🎉</div>
-      <h3>Urmărești confirmările în timp real</h3>
-      <p>Invitații răspund direct din invitație, iar tu vezi totul într-o pagină privată a evenimentului.</p>
+      <h3>Trimiți linkul și urmărești confirmările</h3>
+      <p>Invitații deschid, se bucură și confirmă direct din telefon, iar voi vedeți totul în timp real.</p>
       <ul class="checks">
+        <li>WhatsApp, SMS sau e-mail — ajunge instant</li>
         <li>Câte persoane vin, la fiecare moment al zilei</li>
-        <li>Mesajele dragi de la invitați</li>
-        <li>Statistici live pentru familie</li>
+        <li>Pagina voastră privată, cu statistici și lista invitaților</li>
       </ul>
+    </div>
+  </div>
+</section>
+
+<section id="exemple" class="wrap">
+  <div class="sec-head reveal">
+    <span class="eyebrow">🎨 Exemple</span>
+    <h2>Fiecare invitație, un design unic</h2>
+  </div>
+  <div class="ex-grid">
+    <div class="ex-card reveal">
+      <div class="ex-preview ex-safari">
+        <p class="ex-kicker">Sfântul Botez</p>
+        <p class="ex-nume ex-script">Sofia Maria</p>
+        <p class="ex-emoji">🦁 🦒 🐘</p>
+        <p class="ex-data">17 octombrie 2026</p>
+        <span class="ex-btn">Confirmă prezența</span>
+      </div>
+      <p class="ex-tag"><b>Botez · tema Safari</b></p>
+      <a class="ex-link" href="/demo">Deschide invitația completă ✨</a>
+    </div>
+    <div class="ex-card reveal" style="transition-delay:.1s">
+      <div class="ex-preview ex-nunta">
+        <p class="ex-kicker">Ne căsătorim!</p>
+        <p class="ex-nume ex-serif">Ana <i>&amp;</i> Radu</p>
+        <p class="ex-emoji">🕊️</p>
+        <p class="ex-data">29 mai 2027</p>
+        <span class="ex-btn">Confirmă prezența</span>
+      </div>
+      <p class="ex-tag"><b>Nuntă · eleganță clasică</b></p>
+      <span class="ex-link muted">direcție de design — a voastră va fi unică</span>
+    </div>
+    <div class="ex-card reveal" style="transition-delay:.2s">
+      <div class="ex-preview ex-aniversare">
+        <p class="ex-kicker">Prima aniversare</p>
+        <p class="ex-nume ex-script">Maria face 1 an</p>
+        <p class="ex-emoji">🎈 🎂 🎈</p>
+        <p class="ex-data">3 aprilie 2027</p>
+        <span class="ex-btn">Confirmă prezența</span>
+      </div>
+      <p class="ex-tag"><b>Aniversare · veselă și colorată</b></p>
+      <span class="ex-link muted">direcție de design — a voastră va fi unică</span>
     </div>
   </div>
 </section>
@@ -616,6 +700,7 @@
     <div class="order-body">
       <form id="order-form" novalidate>
         <div class="chat-err" id="order-err"></div>
+        <input type="text" id="o-website" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute; left:-9999px; height:0; opacity:0;">
 
         <label>Tipul evenimentului *</label>
         <div class="tip-chips" role="group" aria-label="Tipul evenimentului">
@@ -690,6 +775,7 @@
     <div class="chat-bubble" id="chat-bubble">Salut! 👋 Vrei o invitație pentru evenimentul tău sau ai o întrebare? Lasă-ne un mesaj și datele tale de contact.</div>
     <form id="chat-form" novalidate>
       <div class="chat-err" id="chat-err"></div>
+      <input type="text" id="chat-website" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute; left:-9999px; height:0; opacity:0;">
       <input type="text" id="chat-name" placeholder="Numele tău *" maxlength="120" autocomplete="name">
       <input type="text" id="chat-contact" placeholder="Telefon sau e-mail *" maxlength="160">
       <textarea id="chat-msg" placeholder="Mesajul tău… *" maxlength="1000"></textarea>
@@ -801,6 +887,7 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          website: document.getElementById('o-website').value,
           tipEveniment,
           sarbatorit: document.getElementById('o-sarbatorit').value.trim(),
           parinti: document.getElementById('o-parinti').value.trim(),
@@ -850,7 +937,7 @@
       const res = await fetch('/api/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, contact, message })
+        body: JSON.stringify({ name, contact, message, website: document.getElementById('chat-website').value })
       });
       if (!res.ok) throw new Error();
       chatForm.style.display = 'none';
