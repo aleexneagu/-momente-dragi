@@ -540,7 +540,8 @@ const server = http.createServer(async (req, res) => {
       up.pipe(res);
     });
     upstream.on('error', () => {
-      sendHtml(res, 502, `<!DOCTYPE html><html lang="ro"><head><meta charset="utf-8">
+      // 503, nu 502 — Cloudflare înlocuiește răspunsurile 502 cu pagina lui de eroare
+      sendHtml(res, 503, `<!DOCTYPE html><html lang="ro"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Atelierul de brodat</title>
 <style>body{font-family:Georgia,serif;background:#f8f3e8;color:#5a4a3a;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;text-align:center}
 h1{font-size:56px;margin:0 0 8px}</style></head>
