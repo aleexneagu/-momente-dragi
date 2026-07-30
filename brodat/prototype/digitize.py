@@ -19,7 +19,7 @@ import cv2
 import numpy as np
 from PIL import Image, ImageDraw, ImageEnhance, ImageFont, ImageOps
 import pyembroidery
-from pyembroidery import EmbThreadPec
+from pyembroidery import EmbThread
 
 MM_PER_PX = 0.1          # rezolutia de lucru
 PX = lambda mm: mm / MM_PER_PX
@@ -241,9 +241,73 @@ def quantize(img: np.ndarray, n_colors: int, seed: int = 7):
     return labels.reshape(img.shape[:2]), centers_rgb, centers
 
 
+# Papiotele reale din atelier: softbox Madeira Polyneon No.40 (decusut.ro,
+# 40 de culori). Fisierele generate folosesc DOAR aceste fire, ca broderia
+# fizica sa iasa 1:1 cu previzualizarea. RGB-urile vin din paleta Ink/Stitch.
+POLYNEON_BOX = [
+    ("1924", "Moonbeam", 251, 212, 0),
+    ("1971", "Manila", 249, 179, 36),
+    ("1866", "Pale Yellow", 240, 221, 145),
+    ("1803", "Lily White", 237, 236, 223),
+    ("1951", "Honeydew", 246, 153, 42),
+    ("1765", "Pumpkin", 237, 112, 31),
+    ("1678", "Fluorescent Orange", 237, 85, 46),
+    ("1831", "Medium Purple", 154, 100, 156),
+    ("1984", "Ruby Glint", 181, 41, 98),
+    ("1990", "Ruby Glint Deschis", 216, 95, 149),
+    ("1815", "Pink", 252, 190, 210),
+    ("1637", "Warm Red", 188, 33, 48),
+    ("1839", "Lipstick", 173, 29, 49),
+    ("1981", "Wine", 135, 42, 57),
+    ("1922", "Purple Accent", 77, 50, 117),
+    ("1842", "Fire Blue", 0, 85, 149),
+    ("1977", "Dark Turquoise", 0, 129, 175),
+    ("1675", "Caribbean Blue", 122, 174, 213),
+    ("1733", "Violet", 59, 123, 176),
+    ("1743", "Light Navy", 47, 55, 92),
+    ("1643", "Navy", 45, 53, 65),
+    ("1902", "Mitchell Green", 45, 74, 56),
+    ("1851", "Fleece Green", 0, 94, 56),
+    ("1988", "Kelly", 0, 140, 67),
+    ("1748", "Spruce", 169, 221, 118),
+    ("1670", "Old Gold", 213, 167, 104),
+    ("1673", "Beige", 173, 142, 94),
+    ("1659", "Dark Oak", 82, 56, 52),
+    ("1657", "Light Cocoa", 135, 91, 67),
+    ("1885", "Tawny Birch", 160, 126, 97),
+    ("1938", "Mushroom", 185, 169, 153),
+    ("1682", "Taupe", 205, 191, 172),
+    ("1800", "Black", 47, 48, 50),
+    ("1946", "Neon Orange", 255, 97, 21),
+    ("1823", "Yellow", 249, 255, 0),
+    ("1850", "Green", 92, 202, 75),
+    ("1640", "Twilight", 94, 97, 98),
+    ("1918", "Limestone", 138, 139, 142),
+    ("1687", "Vapor", 189, 197, 195),
+    ("1801", "Barely Blue", 228, 232, 255),
+]
+
+_CHART = None
+
+
+def thread_chart():
+    """Firele din cutia Polyneon, ca obiecte EmbThread (construite o data)."""
+    global _CHART
+    if _CHART is None:
+        _CHART = []
+        for code, name, r, g, b in POLYNEON_BOX:
+            t = EmbThread()
+            t.set_color(r, g, b)
+            t.description = name
+            t.catalog_number = code
+            t.brand = "Madeira Polyneon 40"
+            _CHART.append(t)
+    return _CHART
+
+
 def match_threads(centers_rgb):
-    """Fiecare culoare de cluster -> cel mai apropiat fir din paleta Brother/PEC."""
-    charts = [t for t in EmbThreadPec.get_thread_set() if t is not None]
+    """Fiecare culoare de cluster -> cel mai apropiat fir din cutia Polyneon."""
+    charts = thread_chart()
     chart_rgb = np.array([[t.get_red(), t.get_green(), t.get_blue()] for t in charts],
                          np.uint8)
     chart_lab = cv2.cvtColor(chart_rgb.reshape(-1, 1, 3), cv2.COLOR_RGB2LAB) \
@@ -259,7 +323,7 @@ def match_threads(centers_rgb):
 def match_gray_threads(vals):
     """Ca match_threads, dar doar printre firele neutre (gri) din paleta —
     altfel un gri inchis poate 'castiga' un fir maro."""
-    charts = [t for t in EmbThreadPec.get_thread_set() if t is not None]
+    charts = thread_chart()
     keep = []
     for t in charts:
         rgb = np.uint8([[[t.get_red(), t.get_green(), t.get_blue()]]])
@@ -1033,7 +1097,7 @@ def main():
                 f"~{mins:.0f} min la 500 spm\n"
                 f"Sarituri de fir >5mm: {len(long_j)} "
                 f"(total {sum(long_j) / 10:.1f} cm de curatat)\n\n"
-                f"Ordinea firelor (Brother/PEC):\n")
+                f"Ordinea firelor (Madeira Polyneon No.40 — cutia de 40):\n")
         for k, (t, _, _kind) in enumerate(color_plan, 1):
             f.write(f" {k}. #{t.catalog_number:>3} {t.description}\n")
         for t, L in skipped:
