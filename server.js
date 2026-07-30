@@ -481,9 +481,12 @@ function proxyBrodat(req, res, targetPath) {
   let target;
   try { target = new URL(targetPath, BRODAT_URL); } catch { return fail(); }
   const client = target.protocol === 'https:' ? require('https') : http;
+  const headers = { 'content-type': req.headers['content-type'] || 'application/json' };
+  // serverul Python citește corpul doar pe baza lui Content-Length — trebuie pasat mai departe
+  if (req.headers['content-length']) headers['content-length'] = req.headers['content-length'];
   const upstream = client.request(target, {
     method: req.method,
-    headers: { 'content-type': req.headers['content-type'] || 'application/json' }
+    headers
   }, (up) => {
     const headers = { 'Content-Type': up.headers['content-type'] || 'application/octet-stream' };
     if (up.headers['content-disposition']) headers['Content-Disposition'] = up.headers['content-disposition'];
