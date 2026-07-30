@@ -11,6 +11,7 @@ paralel a celor 3 stiluri -> comparatie + descarcare .pes/.dst.
 import base64
 import json
 import os
+import re
 import socket
 import subprocess
 import sys
@@ -26,6 +27,43 @@ HOST = os.environ.get("HOST", "127.0.0.1")  # pe Railway: HOST="::" (rețeaua pr
 STYLES = [("mix", "Mix — gravură"), ("poster", "Poster — culori"),
           ("color", "Color — culori + linii"), ("sketch", "Sketch — linii")]
 FILL_STYLES = ("mix", "poster", "color")   # stiluri cu umpleri (editabile)
+
+# desene generate din text (Claude): reguli care dau SVG-uri broderibile —
+# forme mari si pline, fara gradiente/filtre, putine culori
+SVG_SYSTEM = """You design artwork for machine embroidery. Reply with a single \
+complete SVG document and nothing else — no explanations, no markdown fences.
+Rules:
+- Root element: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" width="1000" height="1000">.
+- First child: a background <rect> covering the whole canvas, fill #f6f3ec.
+- Flat solid fills only. No gradients, filters, masks, clip-paths, images, \
+<text> elements, opacity below 1, or external references.
+- At most 6 distinct colors besides the background, chosen to look good as \
+embroidery thread (rich, saturated tones).
+- Bold, simple, recognizable shapes with clean outlines. No detail thinner \
+than about 8 units — thin features cannot be stitched.
+- Center the subject with comfortable margins on all sides."""
+
+
+def genereaza_svg(descriere):
+    if not os.environ.get("ANTHROPIC_API_KEY"):
+        raise RuntimeError("desenele din text nu sunt configurate inca "
+                           "(lipseste cheia ANTHROPIC_API_KEY)")
+    import anthropic
+    client = anthropic.Anthropic()
+    msg = client.messages.create(
+        model="claude-opus-5",
+        max_tokens=16000,
+        system=SVG_SYSTEM,
+        messages=[{"role": "user", "content": descriere}],
+    )
+    if msg.stop_reason == "refusal":
+        raise RuntimeError("desenul nu a putut fi generat — "
+                           "incearca o alta descriere")
+    text = "".join(b.text for b in msg.content if b.type == "text")
+    m = re.search(r"<svg[\s\S]*</svg>", text)
+    if not m:
+        raise RuntimeError("nu am primit un desen valid — incearca din nou")
+    return m.group(0)
 
 PAGE = """<!doctype html>
 <html lang="ro"><head>
@@ -743,6 +781,24 @@ class Handler(BaseHTTPRequestHandler):
                 d = json.loads(p.stdout)
                 d.update(ok=True, job=job)
                 return self._send(200, json.dumps(d).encode())
+
+            if self.path == "/api/genera":
+                descriere = str(req.get("prompt", "")).strip()[:500]
+                if not descriere:
+                    raise RuntimeError("descrie ce vrei sa brodezi")
+                svg = genereaza_svg(descriere)
+                return self._send(200, json.dumps(
+                    {"ok": True, "svg": svg}).encode())
+
+            if self.path == "/api/import":
+                # desen deja rasterizat in browser -> job nou, fara detectie
+                job = uuid.uuid4().hex[:10]
+                job_dir = WEB_OUT / job
+                job_dir.mkdir(parents=True)
+                (job_dir / "input.img").write_bytes(
+                    base64.b64decode(req["image"].split(",", 1)[1]))
+                return self._send(200, json.dumps(
+                    {"ok": True, "job": job}).encode())
 
             if self.path == "/api/digitize":
                 job_dir = (WEB_OUT / req["job"]).resolve()
