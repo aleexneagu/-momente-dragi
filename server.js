@@ -12,6 +12,10 @@ const NOTIFY_EMAIL = process.env.NOTIFY_EMAIL || '';
 const NOTIFY_FROM = process.env.NOTIFY_FROM || 'onboarding@resend.dev';
 const BASE_URL = process.env.BASE_URL || 'https://momente-dragi.ro';
 
+// atelierul de brodat: serviciul Python care generează broderiile (alt serviciu Railway,
+// prin rețeaua privată, ex. http://brodat.railway.internal:8765) — opțional
+const BRODAT_URL = process.env.BRODAT_URL || '';
+
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const RSVP_DIR = path.join(DATA_DIR, 'confirmari');
@@ -59,7 +63,7 @@ const RO_LUNI = ['Ianuarie', 'Februarie', 'Martie', 'Aprilie', 'Mai', 'Iunie',
   'Iulie', 'August', 'Septembrie', 'Octombrie', 'Noiembrie', 'Decembrie'];
 
 // slug-uri care nu pot fi folosite de invitații (căi rezervate)
-const RESERVED_SLUGS = ['admin', 'api', 'templates', 'data', 'public', 'demo', 'demo-nunta', 'demo-aniversare', 'uploads'];
+const RESERVED_SLUGS = ['admin', 'api', 'templates', 'data', 'public', 'demo', 'demo-nunta', 'demo-aniversare', 'uploads', 'brodatx'];
 
 // un singur plan (249 lei) + extra-uri opționale (50 lei fiecare)
 const PRET_BAZA = 249;
@@ -466,6 +470,31 @@ function sendHtml(res, status, html) {
   res.end(html);
 }
 
+// releu către atelierul de brodat: pasează cererea mai departe și răspunsul înapoi,
+// fără să buffereze corpul (pozele trimise ca base64 pot avea câțiva MB)
+function proxyBrodat(req, res, targetPath) {
+  const fail = () => {
+    if (res.headersSent) return res.end();
+    sendJson(res, 503, { error: 'Atelierul de brodat nu e pornit momentan — încearcă mai târziu.' });
+  };
+  if (!BRODAT_URL) return fail();
+  let target;
+  try { target = new URL(targetPath, BRODAT_URL); } catch { return fail(); }
+  const client = target.protocol === 'https:' ? require('https') : http;
+  const upstream = client.request(target, {
+    method: req.method,
+    headers: { 'content-type': req.headers['content-type'] || 'application/json' }
+  }, (up) => {
+    const headers = { 'Content-Type': up.headers['content-type'] || 'application/octet-stream' };
+    if (up.headers['content-disposition']) headers['Content-Disposition'] = up.headers['content-disposition'];
+    res.writeHead(up.statusCode || 502, headers);
+    up.pipe(res);
+  });
+  upstream.setTimeout(300_000, () => upstream.destroy(new Error('timeout')));
+  upstream.on('error', fail);
+  req.pipe(upstream);
+}
+
 function isMaster(req) {
   return req.headers['x-admin-password'] === ADMIN_PASSWORD;
 }
@@ -522,6 +551,24 @@ h1{font-size:56px;margin:0 0 8px}</style></head>
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
   const parts = url.pathname.split('/').filter(Boolean).map(decodeURIComponent);
+
+  // --- atelierul de brodat: pagina + releu către serviciul Python, totul izolat sub /brodatX ---
+  if (parts[0] && parts[0].toLowerCase() === 'brodatx') {
+    if (parts.length === 1) {
+      // pagina se servește doar cu slash final, ca apelurile ei relative (api/…, files/…)
+      // să rămână sub /brodatX/ și să nu se amestece cu API-ul site-ului
+      if (!url.pathname.endsWith('/')) {
+        res.writeHead(302, { Location: '/brodatX/' });
+        return res.end();
+      }
+      return fs.readFile(path.join(PUBLIC_DIR, 'brodatx.html'), (err, content) => {
+        if (err) return sendHtml(res, 500, '<h1>Eroare</h1>');
+        res.writeHead(200, { 'Content-Type': MIME['.html'] });
+        res.end(content);
+      });
+    }
+    return proxyBrodat(req, res, '/' + parts.slice(1).map(encodeURIComponent).join('/') + url.search);
+  }
 
   // --- API public: salvează o confirmare pentru o invitație ---
   // POST /api/rsvp/:slug
