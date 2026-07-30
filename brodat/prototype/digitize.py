@@ -341,6 +341,51 @@ def lightness(rgb) -> float:
     return float(cv2.cvtColor(np.uint8([[rgb]]), cv2.COLOR_RGB2LAB)[0, 0, 0]) / 255 * 100
 
 
+def accent_index(labels, centers_rgb, n):
+    """Culoarea 'vedeta' a pozei: clusterul mare, saturat si central (nu
+    fundal, nu margini/rama, nu alb/negru) — pentru stilurile minimaliste."""
+    h, w = labels.shape
+    my, mx = int(h * 0.12), int(w * 0.12)
+    best, best_s = None, 0.0
+    for i in range(n):
+        m = labels == i
+        share = float(m.mean())
+        if share < 0.02:
+            continue
+        L = lightness(centers_rgb[i])
+        if L > 88 or L < 15:
+            continue
+        lab = cv2.cvtColor(np.uint8([[centers_rgb[i]]]),
+                           cv2.COLOR_RGB2LAB)[0, 0].astype(float)
+        chroma = math.hypot(lab[1] - 128, lab[2] - 128)
+        if chroma < 18:                  # accent doar daca exista culoare vie
+            continue
+        central = float(m[my:h - my, mx:w - mx].sum()) / max(float(m.sum()), 1.0)
+        # accentul trebuie sa fie o pata compacta (frunza, obiect), nu un
+        # inel/halou difuz de fundal: soliditate = arie / invelis convex
+        num, cc, stats, cent = cv2.connectedComponentsWithStats(
+            m.astype(np.uint8))
+        if num < 2:
+            continue
+        big = 1 + int(np.argmax(stats[1:, cv2.CC_STAT_AREA]))
+        area = float(stats[big, cv2.CC_STAT_AREA])
+        if area < 0.015 * h * w:
+            continue
+        cnts, _ = cv2.findContours((cc == big).astype(np.uint8),
+                                   cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        hull = cv2.convexHull(np.vstack(cnts))
+        solidity = area / max(float(cv2.contourArea(hull)), 1.0)
+        if solidity < 0.45:
+            continue
+        cx, cy = cent[big]
+        if not (0.2 * w < cx < 0.8 * w and 0.2 * h < cy < 0.8 * h):
+            continue
+        s = chroma * math.sqrt(share) * central * central
+        if s > best_s:
+            best, best_s = i, s
+    return best
+
+
 def dominant_angle(mask: np.ndarray, gray: np.ndarray) -> float:
     """Unghiul de umplere = perpendicular pe gradientul dominant (structure tensor)."""
     gx = cv2.Sobel(gray, cv2.CV_32F, 1, 0, ksize=5)
@@ -590,11 +635,13 @@ def detect_faces(gray_u8):
     return [tuple(int(v) for v in f) for f in faces]
 
 
-def sketch_paths(gray, min_mm=4.0, step_mm=1.4, faces=()):
+def sketch_paths(gray, min_mm=4.0, step_mm=1.4, faces=(), minimal=False):
     """Stil 'desen in linie': granitele formelor tonale mari dau linia
     structurala, continua; muchiile Canny adauga detaliile. Fragmentele
     apropiate se unesc, totul se netezeste. In zona fetei detaliile sunt
-    mai sensibile si nu se filtreaza ca zgomot."""
+    mai sensibile si nu se filtreaza ca zgomot.
+    minimal=True: doar muchiile lungi si clare (fara pragurile tonale, care
+    pe fundaluri cu vinieta deseneaza inele) si fara liniile de la margine."""
     h, w = gray.shape[:2]
     g8 = gray.astype(np.uint8)
     g = cv2.GaussianBlur(g8, (3, 3), 0)
@@ -613,7 +660,9 @@ def sketch_paths(gray, min_mm=4.0, step_mm=1.4, faces=()):
     canny_sup = cv2.dilate(cv2.Canny(g, 35, 90),
                            np.ones((int(PX(0.8)) | 1,) * 2, np.uint8))
     k5 = np.ones((5, 5), np.uint8)
-    for q in (0.45, 0.2, 0.7):               # intai forma principala
+    qs = () if minimal else (0.45, 0.2, 0.7)
+    grad_min, canny_min = 20.0, 0.25
+    for q in qs:                             # intai forma principala
         t = float(np.quantile(sm, q))
         mask = (sm < t).astype(np.uint8)
         mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, k5)
@@ -627,10 +676,10 @@ def sketch_paths(gray, min_mm=4.0, step_mm=1.4, faces=()):
             iy, ix = pts[:, 1].astype(int), pts[:, 0].astype(int)
             if covered[iy, ix].mean() > 0.6:
                 continue                     # granita desenata deja la alt prag
-            if float(np.median(grad[iy, ix])) < 20.0:
+            if float(np.median(grad[iy, ix])) < grad_min:
                 continue                     # pragul taie un gradient lin
                                              # (cer, umbra difuza): linie falsa
-            if float((canny_sup[iy, ix] > 0).mean()) < 0.25:
+            if float((canny_sup[iy, ix] > 0).mean()) < canny_min:
                 continue                     # fara suport de muchii: vinieta
             p = resample(np.vstack([pts, pts[:1]]), step_mm)
             if p is None:
@@ -654,7 +703,9 @@ def sketch_paths(gray, min_mm=4.0, step_mm=1.4, faces=()):
             float(np.mean([face_mask[y, x] for y, x in chain[::4]])) > 0.5
         if length_mm < (2.5 if on_face else min_mm):
             continue
-        if not on_face:                  # trasaturile fetei nu sunt zgomot
+        # trasaturile fetei nu sunt zgomot; dar in modul minimalist filtram
+        # peste tot — fetele fals-detectate (texturi, sclipici) ar scapa altfel
+        if not on_face or minimal:
             # traseu intr-o zona plina de muchii = zgomot de textura
             dens = float(np.mean([density[y, x] for y, x in chain[::4]]))
             if length_mm < 9.0 and dens > 0.18:
@@ -666,7 +717,43 @@ def sketch_paths(gray, min_mm=4.0, step_mm=1.4, faces=()):
         p = resample(np.array([(x, y) for y, x in chain], np.float32), step_mm)
         if p is not None:
             paths.append(_smooth(p))
+    if minimal:
+        # liniile lipite de marginea imaginii sunt rama/fundal, nu subiectul
+        m = 0.05 * min(w, h)
+        def _hugs_border(p):
+            near = ((p[:, 0] < m) | (p[:, 0] > w - m)
+                    | (p[:, 1] < m) | (p[:, 1] > h - m))
+            return float(near.mean()) > 0.55
+        paths = [p for p in paths if not _hugs_border(p)]
     return paths
+
+
+def minimal_filter(paths, w, h, budget_mm=650.0, max_curl=2.2):
+    """Pastreaza doar liniile definitorii pentru stilurile minimaliste:
+    netede (nu 'crete' = textura), departe de resturile de rama, si doar
+    pana la un buget total de fir — cele mai lungi si mai calme intai."""
+    scored = []
+    for p in paths:
+        d = np.diff(p, axis=0)
+        ln = float(np.hypot(d[:, 0], d[:, 1]).sum())
+        bb = math.hypot(p[:, 0].max() - p[:, 0].min(),
+                        p[:, 1].max() - p[:, 1].min())
+        c = ln / max(bb, 1.0)
+        if c > max_curl:
+            continue                     # creata rau: zgomot de textura
+        mx = 0.12                        # traseu integral intr-o banda de
+        if p[:, 1].max() < h * mx or p[:, 1].min() > h * (1 - mx) \
+           or p[:, 0].max() < w * mx or p[:, 0].min() > w * (1 - mx):
+            continue                     # margine: rest de rama, nu subiect
+        scored.append((ln / c, ln, p))
+    scored.sort(key=lambda t: -t[0])     # lungi si netede intai
+    out, total = [], 0.0
+    for _, ln, p in scored:
+        out.append(p)
+        total += ln * MM_PER_PX
+        if total > budget_mm:
+            break
+    return out
 
 
 def split_long(paths, max_mm=8.0):
@@ -831,7 +918,8 @@ def main():
     ap.add_argument("-o", "--out", default=None, help="prefix fisiere iesire")
     ap.add_argument("--size", type=float, default=95, help="latura design mm")
     ap.add_argument("--colors", type=int, default=7)
-    ap.add_argument("--style", choices=["poster", "sketch", "mix", "color"],
+    ap.add_argument("--style", choices=["poster", "sketch", "mix", "color",
+                                        "linie", "liniecolor", "duo", "tus"],
                     default="poster")
     ap.add_argument("--labels-out", action="store_true",
                     help="salveaza harta de regiuni (pt. editorul din web)")
@@ -980,6 +1068,68 @@ def main():
             sk = [np.vstack([p, p[::-1], p]) for p in sk]
         color_plan.append((threads[dark_i], [sk], "line"))
         order = []                       # sarim peste modul poster
+
+    # stilurile minimaliste: putin fir, mult material vizibil
+    if a.style in ("linie", "liniecolor", "duo", "tus"):
+        dark = match_threads(np.array([[25, 24, 28]]))[0]
+        if a.style == "tus":
+            # pete 'de tus': doar zonele inchise, hasurate rar + contur.
+            # pragul se calculeaza pe zona centrala (subiectul), nu pe
+            # vinieta/rama, iar petele raman in interiorul cadrului
+            k5 = np.ones((5, 5), np.uint8)
+            hh, ww = gray.shape
+            my, mx = int(hh * 0.08), int(ww * 0.08)
+            core = gray[my:hh - my, mx:ww - mx]
+            t = float(np.quantile(core, 0.35))
+            mask = np.zeros((hh, ww), np.uint8)
+            mask[my:hh - my, mx:ww - mx] = (core < t).astype(np.uint8)
+            mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, k5)
+            mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, k5)
+            mask = drop_small_islands(mask, 25.0)
+            # petele care traiesc mai ales langa margine sunt fundal/vinieta
+            band = np.ones_like(mask)
+            band[int(hh * .18):hh - int(hh * .18),
+                 int(ww * .18):ww - int(ww * .18)] = 0
+            centru = np.zeros_like(mask)
+            centru[int(hh * .25):hh - int(hh * .25),
+                   int(ww * .25):ww - int(ww * .25)] = 1
+            num, cc = cv2.connectedComponents(mask)
+            for lbl in range(1, num):
+                comp = cc == lbl
+                if float(band[comp].mean()) > 0.5 \
+                        or float(centru[comp].mean()) < 0.1:
+                    mask[comp] = 0
+            if mask.any():
+                ang = dominant_angle(mask, gray)
+                color_plan.append((dark, [order_paths(split_long(fill_mask(
+                    mask, ang, a.spacing * 2.6, a.stitch,
+                    tatami=False)))], "fill"))
+                color_plan.append((dark, [order_paths(split_long(
+                    outline_mask(mask, min_area_mm2=15)))], "line"))
+        else:
+            # doar muchiile lungi si clare, cusute plin (dus-intors-dus)
+            sk_raw = sketch_paths(gray, min_mm=14.0, faces=faces, minimal=True)
+            sk_raw = minimal_filter(sk_raw, size_px, size_px,
+                                    budget_mm=inner_mm * 6.8)
+            sk = order_paths(split_long(sk_raw))
+            sk = [np.vstack([p, p[::-1], p]) for p in sk]
+            ai = accent_index(labels, centers_rgb, a.colors) \
+                if a.style in ("liniecolor", "duo") else None
+            if a.style == "duo" and ai is not None:
+                # un singur accent de culoare, umplut aerisit, sub linii
+                mask = (labels == ai).astype(np.uint8)
+                mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, k3)
+                mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, k3)
+                mask = drop_small_islands(mask)
+                if mask.sum() >= PX(3) * PX(3):
+                    ang = dominant_angle(mask, gray)
+                    color_plan.append((threads[ai], [order_paths(split_long(
+                        fill_zones(mask, gray, ang, a.spacing * 2.0, a.stitch,
+                                   flow=not a.no_flow)))], "fill"))
+            thread = threads[ai] \
+                if a.style == "liniecolor" and ai is not None else dark
+            color_plan.append((thread, [sk], "line"))
+        order = []
 
     for i in order:
         L = lightness(centers_rgb[i])
