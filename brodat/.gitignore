@@ -1,0 +1,10 @@
+# rezultate generate
+prototype/out/
+
+# poze personale și fișiere descărcate — nu se urcă pe GitHub
+polaroids/
+pes/
+
+__pycache__/
+*.pyc
+nohup.out
