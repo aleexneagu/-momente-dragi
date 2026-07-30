@@ -12,6 +12,9 @@ const NOTIFY_EMAIL = process.env.NOTIFY_EMAIL || '';
 const NOTIFY_FROM = process.env.NOTIFY_FROM || 'onboarding@resend.dev';
 const BASE_URL = process.env.BASE_URL || 'https://momente-dragi.ro';
 
+// atelierul de brodat (aplicația Python) — servit sub /brodat prin proxy
+const BRODAT_URL = process.env.BRODAT_URL || 'http://localhost:8765';
+
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const RSVP_DIR = path.join(DATA_DIR, 'confirmari');
@@ -522,6 +525,30 @@ h1{font-size:56px;margin:0 0 8px}</style></head>
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
   const parts = url.pathname.split('/').filter(Boolean).map(decodeURIComponent);
+
+  // --- /brodat → aplicația de broderie (proxy către serverul Python) ---
+  // trebuie tratat înaintea rutei /:slug, altfel „brodat" ar fi căutat ca invitație
+  if (url.pathname === '/brodat') {
+    res.writeHead(301, { Location: '/brodat/' + url.search });
+    return res.end();
+  }
+  if (url.pathname.startsWith('/brodat/')) {
+    const target = new URL(url.pathname.slice('/brodat'.length) + url.search, BRODAT_URL);
+    const headers = { ...req.headers, host: target.host };
+    const upstream = http.request(target, { method: req.method, headers }, up => {
+      res.writeHead(up.statusCode, up.headers);
+      up.pipe(res);
+    });
+    upstream.on('error', () => {
+      sendHtml(res, 502, `<!DOCTYPE html><html lang="ro"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Atelierul de brodat</title>
+<style>body{font-family:Georgia,serif;background:#f8f3e8;color:#5a4a3a;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;text-align:center}
+h1{font-size:56px;margin:0 0 8px}</style></head>
+<body><div><h1>🧵</h1><p>Atelierul de brodat nu este pornit momentan.<br>Încearcă din nou în câteva minute.</p></div></body></html>`);
+    });
+    req.pipe(upstream);
+    return;
+  }
 
   // --- API public: salvează o confirmare pentru o invitație ---
   // POST /api/rsvp/:slug
