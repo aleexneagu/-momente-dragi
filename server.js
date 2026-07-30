@@ -12,9 +12,6 @@ const NOTIFY_EMAIL = process.env.NOTIFY_EMAIL || '';
 const NOTIFY_FROM = process.env.NOTIFY_FROM || 'onboarding@resend.dev';
 const BASE_URL = process.env.BASE_URL || 'https://momente-dragi.ro';
 
-// atelierul de brodat (aplicația Python) — servit sub /brodat prin proxy
-const BRODAT_URL = process.env.BRODAT_URL || 'http://localhost:8765';
-
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const RSVP_DIR = path.join(DATA_DIR, 'confirmari');
@@ -526,40 +523,6 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
   const parts = url.pathname.split('/').filter(Boolean).map(decodeURIComponent);
 
-  // --- /brodat → aplicația de broderie (proxy către serverul Python) ---
-  // trebuie tratat înaintea rutei /:slug, altfel „brodat" ar fi căutat ca invitație
-  if (url.pathname === '/brodat') {
-    res.writeHead(301, { Location: '/brodat/' + url.search });
-    return res.end();
-  }
-  if (url.pathname.startsWith('/brodat/')) {
-    // pagină de așteptare la orice problemă (serviciu oprit, BRODAT_URL greșit).
-    // 503, nu 502 — Cloudflare înlocuiește răspunsurile 502 cu pagina lui de eroare
-    const unavailable = () => {
-      if (res.headersSent) return res.end();
-      sendHtml(res, 503, `<!DOCTYPE html><html lang="ro"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Atelierul de brodat</title>
-<style>body{font-family:Georgia,serif;background:#f8f3e8;color:#5a4a3a;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;text-align:center}
-h1{font-size:56px;margin:0 0 8px}</style></head>
-<body><div><h1>🧵</h1><p>Atelierul de brodat nu este pornit momentan.<br>Încearcă din nou în câteva minute.</p></div></body></html>`);
-    };
-    try {
-      const target = new URL(url.pathname.slice('/brodat'.length) + url.search, BRODAT_URL);
-      const mod = target.protocol === 'https:' ? require('https') : http;
-      const headers = { ...req.headers, host: target.host };
-      const upstream = mod.request(target, { method: req.method, headers }, up => {
-        res.writeHead(up.statusCode, up.headers);
-        up.pipe(res);
-      });
-      upstream.on('error', unavailable);
-      req.pipe(upstream);
-    } catch (e) {
-      console.error('Proxy /brodat:', e.message);
-      unavailable();
-    }
-    return;
-  }
-
   // --- API public: salvează o confirmare pentru o invitație ---
   // POST /api/rsvp/:slug
   if (req.method === 'POST' && parts[0] === 'api' && parts[1] === 'rsvp' && parts.length === 3) {
@@ -893,10 +856,6 @@ h1{font-size:56px;margin:0 0 8px}</style></head>
   res.writeHead(405);
   res.end();
 });
-
-// o eroare neprinsă într-un handler nu trebuie să doboare tot site-ul
-process.on('unhandledRejection', err => console.error('Unhandled rejection:', err));
-process.on('uncaughtException', err => console.error('Uncaught exception:', err));
 
 server.listen(PORT, () => {
   console.log(`Dashboard: http://localhost:${PORT}/ (parola: ${ADMIN_PASSWORD})`);
