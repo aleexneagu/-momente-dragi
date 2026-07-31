@@ -43,11 +43,10 @@
               background:var(--acc); color:#fff; border:0; border-radius:8px;
               cursor:pointer; }
   button#go:disabled { opacity:.5; cursor:wait; }
-  #results { flex:1; min-height:0; display:grid; gap:8px; overflow-y:auto;
-             grid-template-columns:repeat(4, 1fr);
-             grid-auto-rows:minmax(0, 1fr); }
+  #results { flex:1; min-height:0; display:grid; gap:10px; overflow-y:auto;
+             grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); }
   @media (max-width:900px){
-    #results { grid-template-columns:1fr 1fr; grid-auto-rows:auto; }
+    #results { grid-template-columns:1fr 1fr; }
   }
   .res { background:#faf7f0; border:1px solid #e4ded2; border-radius:8px;
          padding:8px; display:flex; flex-direction:column; min-height:0; }
@@ -298,7 +297,7 @@ function renderCard(r){
   }
   const edit = FILL_STYLES.includes(r.style)
     ? `<button class="mini2" data-edit="1" title="Editează regiunile">✏️</button>` : '';
-  const erz = !['poster','silueta','duoton'].includes(r.style)
+  const erz = r.style !== 'poster'
     ? `<button class="mini2" data-erase="${r.style}" title="Radieră de linii">🧽</button>` : '';
   el.innerHTML = `<h3><span>${r.title}</span><span>
       <button class="mini2" data-regen="${r.style}" title="Regenerează doar acest stil">↻</button>
