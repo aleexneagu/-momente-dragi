@@ -27,7 +27,9 @@ STYLES = [("mix", "Mix — gravură"), ("poster", "Poster — culori"),
           ("color", "Color — culori + linii"), ("sketch", "Sketch — linii"),
           ("linie", "Linie — contur minimal"), ("silueta", "Siluetă — ștampilă"),
           ("hasura", "Hașură — gravură minimală"),
-          ("amprenta", "Amprentă — contururi concentrice")]
+          ("amprenta", "Amprentă — contururi concentrice"),
+          ("val", "Val — linii curgătoare"), ("duoton", "Duoton — pop-art"),
+          ("cruce", "Cruciulițe — goblen"), ("cristal", "Cristal — fațete")]
 FILL_STYLES = ("mix", "poster", "color")   # stiluri cu umpleri (editabile)
 
 PAGE = """<!doctype html>

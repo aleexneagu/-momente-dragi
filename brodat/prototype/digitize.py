@@ -766,6 +766,100 @@ def fill_holes(mask):
     return (mask | inv).astype(np.uint8)
 
 
+def wave_fill(mask, spacing_mm=2.2, amp_mm=0.9, wave_mm=14.0, step_mm=1.6):
+    """Umplere 'val': randuri orizontale usor ondulate, doar in interiorul
+    mastii — textura curgatoare, ca apa sau ca quiltingul liber."""
+    h, w = mask.shape
+    sp, amp = PX(spacing_mm), PX(amp_mm)
+    lam, step = PX(wave_mm), PX(step_mm)
+    paths = []
+    for row, y0 in enumerate(np.arange(sp * 0.5, h, sp)):
+        xs = np.arange(0.0, w, step)
+        if row % 2:
+            xs = xs[::-1]                # serpentina: dus-intors pe randuri
+        run = []
+        for x in xs:
+            y = y0 + amp * math.sin(2 * math.pi * x / lam + row * 1.7)
+            yi, xi = int(y), int(x)
+            if 0 <= yi < h and 0 <= xi < w and mask[yi, xi]:
+                run.append((x, y))
+            else:
+                if len(run) > 2:
+                    paths.append(np.array(run, np.float32))
+                run = []
+        if len(run) > 2:
+            paths.append(np.array(run, np.float32))
+    return paths
+
+
+def cross_cells(mask, cell_mm=3.2):
+    """Cruciulite pe grila (goblen): un X cusut in fiecare celula acoperita
+    de silueta; parcurgere serpentina, sariturile raman minuscule."""
+    c = PX(cell_mm)
+    h, w = mask.shape
+    ny, nx = max(1, int(h // c)), max(1, int(w // c))
+    cov = cv2.resize(mask.astype(np.float32), (nx, ny),
+                     interpolation=cv2.INTER_AREA)
+    paths = []
+    for j in range(ny):
+        rng = range(nx) if j % 2 == 0 else range(nx - 1, -1, -1)
+        for i in rng:
+            if cov[j, i] < 0.55:
+                continue
+            x0, y0, x1, y1 = i * c, j * c, (i + 1) * c, (j + 1) * c
+            paths.append(np.array([(x0, y0), (x1, y1), (x1, y0), (x0, y1)],
+                                  np.float32))
+    return paths
+
+
+def crystal_paths(mask, gray):
+    """Fatete 'low-poly': triangulatie Delaunay pe colturile siluetei si
+    pe punctele de interes din interior; se cos muchiile triunghiurilor."""
+    h, w = mask.shape
+    cnts, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL,
+                               cv2.CHAIN_APPROX_SIMPLE)
+    pts = []
+    for cn in cnts:
+        if cv2.contourArea(cn) < PX(8) * PX(8):
+            continue
+        ap = cv2.approxPolyDP(cn, PX(3.5), True).reshape(-1, 2)
+        pts += [(float(x), float(y)) for x, y in ap]
+    if len(pts) < 3:
+        return []
+    corners = cv2.goodFeaturesToTrack(gray.astype(np.uint8), 40, 0.05,
+                                      PX(7), mask=mask)
+    if corners is not None:
+        pts += [(float(p[0][0]), float(p[0][1])) for p in corners]
+    pas = PX(8.0)                        # si o grila rara in interior,
+    y = pas / 2                          # ca fatetele sa fie uniforme
+    while y < h:
+        x = pas / 2 + (pas / 2 if int(y / pas) % 2 else 0)
+        while x < w:
+            if mask[int(y), int(x)]:
+                pts.append((float(x), float(y)))
+            x += pas
+        y += pas
+    subdiv = cv2.Subdiv2D((0, 0, w + 1, h + 1))
+    for p in pts:
+        subdiv.insert(p)
+    edges = set()
+    for t in subdiv.getTriangleList():
+        tri = [(t[0], t[1]), (t[2], t[3]), (t[4], t[5])]
+        for a_, b_ in ((0, 1), (1, 2), (2, 0)):
+            (x0, y0), (x1, y1) = tri[a_], tri[b_]
+            mxp, myp = int((x0 + x1) / 2), int((y0 + y1) / 2)
+            # muchia ramane doar daca mijlocul ei e in silueta (cele care
+            # sar peste golurile formei concave dispar)
+            if not (0 <= myp < h and 0 <= mxp < w and mask[myp, mxp]):
+                continue
+            if math.hypot(x1 - x0, y1 - y0) < PX(2.0):
+                continue
+            edges.add(tuple(sorted((tri[a_], tri[b_]))))
+    paths = [np.array(e, np.float32) for e in edges]
+    paths += outline_mask(mask, min_area_mm2=15)
+    return paths
+
+
 def minimal_filter(paths, w, h, budget_mm=650.0, max_curl=2.2):
     """Pastreaza doar liniile definitorii pentru stilurile minimaliste:
     netede (nu 'crete' = textura), departe de resturile de rama, si doar
@@ -958,7 +1052,8 @@ def main():
     ap.add_argument("--colors", type=int, default=7)
     ap.add_argument("--style", choices=["poster", "sketch", "mix", "color",
                                         "linie", "silueta", "hasura",
-                                        "amprenta"],
+                                        "amprenta", "val", "duoton",
+                                        "cruce", "cristal"],
                     default="poster")
     ap.add_argument("--labels-out", action="store_true",
                     help="salveaza harta de regiuni (pt. editorul din web)")
@@ -1111,7 +1206,8 @@ def main():
     # stilurile minimaliste: putin fir, mult material vizibil — patru
     # limbaje vizuale diferite: desen in linie / stampila plina /
     # gravura hasurata / contururi concentrice
-    if a.style in ("linie", "silueta", "hasura", "amprenta"):
+    if a.style in ("linie", "silueta", "hasura", "amprenta",
+                   "val", "duoton", "cruce", "cristal"):
         dark = match_threads(np.array([[25, 24, 28]]))[0]
 
         if a.style == "linie":
@@ -1157,7 +1253,7 @@ def main():
                 color_plan.append((dark, [order_paths(split_long(fill_mask(
                     m, 45, sp, a.stitch, tatami=False)))], "line"))
 
-        else:                            # amprenta: contururi concentrice
+        elif a.style == "amprenta":      # contururi concentrice
             filled = fill_holes(subject_mask(img, gray))
             if filled.any():
                 pas = int(PX(2.4)) | 1
@@ -1169,6 +1265,50 @@ def main():
                     rings += outline_mask(level, min_area_mm2=8)
                     level = cv2.erode(level, kk)
                 sk = order_paths(split_long(rings))
+                sk = [np.vstack([p, p[::-1]]) for p in sk]
+                color_plan.append((dark, [sk], "line"))
+
+        elif a.style == "val":           # linii curgatoare in silueta
+            filled = fill_holes(subject_mask(img, gray))
+            if filled.any():
+                sk = order_paths(split_long(wave_fill(filled)))
+                color_plan.append((dark, [sk], "line"))
+                color_plan.append((dark, [order_paths(split_long(
+                    outline_mask(filled, min_area_mm2=15)))], "line"))
+
+        elif a.style == "duoton":        # pop-art: doua tonuri pe toata poza
+            hh, ww = gray.shape
+            my, mx = int(hh * 0.08), int(ww * 0.08)
+            core = gray[my:hh - my, mx:ww - mx]
+            ai = accent_index(labels, centers_rgb, a.colors)
+            mid_th = threads[ai] if ai is not None \
+                else match_gray_threads(np.array([[120, 118, 122]]))[0]
+            t1 = float(np.quantile(core, 0.30))
+            t2 = float(np.quantile(core, 0.58))
+            for lo, hi, th_, sp in ((t1, t2, mid_th, 1.5),
+                                    (None, t1, dark, 0.8)):
+                m = ((gray < hi) if lo is None
+                     else ((gray >= lo) & (gray < hi))).astype(np.uint8)
+                m = cv2.morphologyEx(m, cv2.MORPH_OPEN, k3)
+                m = cv2.morphologyEx(m, cv2.MORPH_CLOSE, k3)
+                m = drop_small_islands(m, 8.0)
+                if not m.any():
+                    continue
+                ang = dominant_angle(m, gray)
+                color_plan.append((th_, [order_paths(split_long(fill_mask(
+                    m, ang, sp, a.stitch)))], "fill"))
+
+        elif a.style == "cruce":         # goblen: cruciulite pe grila
+            filled = fill_holes(subject_mask(img, gray))
+            if filled.any():
+                ai = accent_index(labels, centers_rgb, a.colors)
+                th = threads[ai] if ai is not None else dark
+                color_plan.append((th, [cross_cells(filled)], "line"))
+
+        else:                            # cristal: fatete low-poly
+            filled = fill_holes(subject_mask(img, gray))
+            if filled.any():
+                sk = order_paths(split_long(crystal_paths(filled, gray)))
                 sk = [np.vstack([p, p[::-1]]) for p in sk]
                 color_plan.append((dark, [sk], "line"))
         order = []

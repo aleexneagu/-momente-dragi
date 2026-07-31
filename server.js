@@ -493,7 +493,7 @@ function proxyBrodat(req, res, targetPath) {
     res.writeHead(up.statusCode || 502, headers);
     up.pipe(res);
   });
-  upstream.setTimeout(300_000, () => upstream.destroy(new Error('timeout')));
+  upstream.setTimeout(480_000, () => upstream.destroy(new Error('timeout')));
   upstream.on('error', fail);
   req.pipe(upstream);
 }

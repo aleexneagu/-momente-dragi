@@ -298,7 +298,7 @@ function renderCard(r){
   }
   const edit = FILL_STYLES.includes(r.style)
     ? `<button class="mini2" data-edit="1" title="Editează regiunile">✏️</button>` : '';
-  const erz = !['poster','silueta'].includes(r.style)
+  const erz = !['poster','silueta','duoton'].includes(r.style)
     ? `<button class="mini2" data-erase="${r.style}" title="Radieră de linii">🧽</button>` : '';
   el.innerHTML = `<h3><span>${r.title}</span><span>
       <button class="mini2" data-regen="${r.style}" title="Regenerează doar acest stil">↻</button>
