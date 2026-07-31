@@ -25,8 +25,9 @@ PORT = int(os.environ.get("PORT", "8765"))
 HOST = os.environ.get("HOST", "127.0.0.1")  # pe Railway: HOST="::" (rețeaua privată e IPv6)
 STYLES = [("mix", "Mix — gravură"), ("poster", "Poster — culori"),
           ("color", "Color — culori + linii"), ("sketch", "Sketch — linii"),
-          ("linie", "Linie — contur minimal"), ("liniecolor", "Linie color — 1 fir"),
-          ("duo", "Duo — contur + accent"), ("tus", "Tuș — umbre minimale")]
+          ("linie", "Linie — contur minimal"), ("silueta", "Siluetă — ștampilă"),
+          ("hasura", "Hașură — gravură minimală"),
+          ("amprenta", "Amprentă — contururi concentrice")]
 FILL_STYLES = ("mix", "poster", "color")   # stiluri cu umpleri (editabile)
 
 PAGE = """<!doctype html>

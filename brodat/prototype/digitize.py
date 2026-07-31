@@ -728,6 +728,44 @@ def sketch_paths(gray, min_mm=4.0, step_mm=1.4, faces=(), minimal=False):
     return paths
 
 
+def subject_mask(img, gray, q=0.5):
+    """Silueta subiectului pentru stilurile minimaliste: GrabCut separa
+    subiectul de fundal (rezolva vinieta si ramele), intersectat cu zonele
+    mai inchise decat pragul central; raman doar componentele centrale."""
+    hh, ww = gray.shape
+    m = np.zeros((hh, ww), np.uint8)
+    rect = (int(ww * 0.10), int(hh * 0.06), int(ww * 0.80), int(hh * 0.88))
+    bgd = np.zeros((1, 65), np.float64)
+    fgd = np.zeros((1, 65), np.float64)
+    cv2.grabCut(cv2.cvtColor(img, cv2.COLOR_RGB2BGR), m, rect, bgd, fgd, 4,
+                cv2.GC_INIT_WITH_RECT)
+    fg = ((m == cv2.GC_FGD) | (m == cv2.GC_PR_FGD)).astype(np.uint8)
+    my, mx = int(hh * 0.08), int(ww * 0.08)
+    t = float(np.quantile(gray[my:hh - my, mx:ww - mx], q))
+    mask = ((gray < t).astype(np.uint8)) & fg
+    k5 = np.ones((5, 5), np.uint8)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, k5)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, k5, iterations=2)
+    mask = drop_small_islands(mask, 40.0)
+    centru = np.zeros_like(mask)
+    centru[int(hh * .25):hh - int(hh * .25), int(ww * .25):ww - int(ww * .25)] = 1
+    num, cc = cv2.connectedComponents(mask)
+    for lbl in range(1, num):
+        comp = cc == lbl
+        if float(centru[comp].mean()) < 0.15:
+            mask[comp] = 0
+    return mask
+
+
+def fill_holes(mask):
+    """Umple gaurile interioare: silueta devine o pata plina, de stampila."""
+    hh, ww = mask.shape
+    inv = (mask == 0).astype(np.uint8)
+    ff = np.zeros((hh + 2, ww + 2), np.uint8)
+    cv2.floodFill(inv, ff, (0, 0), 0)    # exteriorul dispare; raman gaurile
+    return (mask | inv).astype(np.uint8)
+
+
 def minimal_filter(paths, w, h, budget_mm=650.0, max_curl=2.2):
     """Pastreaza doar liniile definitorii pentru stilurile minimaliste:
     netede (nu 'crete' = textura), departe de resturile de rama, si doar
@@ -919,7 +957,8 @@ def main():
     ap.add_argument("--size", type=float, default=95, help="latura design mm")
     ap.add_argument("--colors", type=int, default=7)
     ap.add_argument("--style", choices=["poster", "sketch", "mix", "color",
-                                        "linie", "liniecolor", "duo", "tus"],
+                                        "linie", "silueta", "hasura",
+                                        "amprenta"],
                     default="poster")
     ap.add_argument("--labels-out", action="store_true",
                     help="salveaza harta de regiuni (pt. editorul din web)")
@@ -1069,66 +1108,69 @@ def main():
         color_plan.append((threads[dark_i], [sk], "line"))
         order = []                       # sarim peste modul poster
 
-    # stilurile minimaliste: putin fir, mult material vizibil
-    if a.style in ("linie", "liniecolor", "duo", "tus"):
+    # stilurile minimaliste: putin fir, mult material vizibil — patru
+    # limbaje vizuale diferite: desen in linie / stampila plina /
+    # gravura hasurata / contururi concentrice
+    if a.style in ("linie", "silueta", "hasura", "amprenta"):
         dark = match_threads(np.array([[25, 24, 28]]))[0]
-        if a.style == "tus":
-            # pete 'de tus': doar zonele inchise, hasurate rar + contur.
-            # pragul se calculeaza pe zona centrala (subiectul), nu pe
-            # vinieta/rama, iar petele raman in interiorul cadrului
-            k5 = np.ones((5, 5), np.uint8)
-            hh, ww = gray.shape
-            my, mx = int(hh * 0.08), int(ww * 0.08)
-            core = gray[my:hh - my, mx:ww - mx]
-            t = float(np.quantile(core, 0.35))
-            mask = np.zeros((hh, ww), np.uint8)
-            mask[my:hh - my, mx:ww - mx] = (core < t).astype(np.uint8)
-            mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, k5)
-            mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, k5)
-            mask = drop_small_islands(mask, 25.0)
-            # petele care traiesc mai ales langa margine sunt fundal/vinieta
-            band = np.ones_like(mask)
-            band[int(hh * .18):hh - int(hh * .18),
-                 int(ww * .18):ww - int(ww * .18)] = 0
-            centru = np.zeros_like(mask)
-            centru[int(hh * .25):hh - int(hh * .25),
-                   int(ww * .25):ww - int(ww * .25)] = 1
-            num, cc = cv2.connectedComponents(mask)
-            for lbl in range(1, num):
-                comp = cc == lbl
-                if float(band[comp].mean()) > 0.5 \
-                        or float(centru[comp].mean()) < 0.1:
-                    mask[comp] = 0
-            if mask.any():
-                ang = dominant_angle(mask, gray)
-                color_plan.append((dark, [order_paths(split_long(fill_mask(
-                    mask, ang, a.spacing * 2.6, a.stitch,
-                    tatami=False)))], "fill"))
-                color_plan.append((dark, [order_paths(split_long(
-                    outline_mask(mask, min_area_mm2=15)))], "line"))
-        else:
+
+        if a.style == "linie":
             # doar muchiile lungi si clare, cusute plin (dus-intors-dus)
             sk_raw = sketch_paths(gray, min_mm=14.0, faces=faces, minimal=True)
             sk_raw = minimal_filter(sk_raw, size_px, size_px,
                                     budget_mm=inner_mm * 6.8)
             sk = order_paths(split_long(sk_raw))
             sk = [np.vstack([p, p[::-1], p]) for p in sk]
-            ai = accent_index(labels, centers_rgb, a.colors) \
-                if a.style in ("liniecolor", "duo") else None
-            if a.style == "duo" and ai is not None:
-                # un singur accent de culoare, umplut aerisit, sub linii
-                mask = (labels == ai).astype(np.uint8)
-                mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, k3)
-                mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, k3)
-                mask = drop_small_islands(mask)
-                if mask.sum() >= PX(3) * PX(3):
-                    ang = dominant_angle(mask, gray)
-                    color_plan.append((threads[ai], [order_paths(split_long(
-                        fill_zones(mask, gray, ang, a.spacing * 2.0, a.stitch,
-                                   flow=not a.no_flow)))], "fill"))
-            thread = threads[ai] \
-                if a.style == "liniecolor" and ai is not None else dark
-            color_plan.append((thread, [sk], "line"))
+            color_plan.append((dark, [sk], "line"))
+
+        elif a.style == "silueta":
+            # subiectul ca pata plina, de stampila — in culoarea vedeta
+            # a pozei daca exista, altfel negru
+            filled = fill_holes(subject_mask(img, gray))
+            if filled.any():
+                ai = accent_index(labels, centers_rgb, a.colors)
+                th = threads[ai] if ai is not None else dark
+                ang = dominant_angle(filled, gray)
+                layers = [order_paths(split_long(fill_mask(
+                    cv2.erode(filled, k3), ang + 90, 2.2, 4.5,
+                    tatami=False)))]                       # underlay
+                layers.append(order_paths(split_long(fill_mask(
+                    filled, ang, 0.5, a.stitch))))
+                layers.append(order_paths(split_long(
+                    outline_mask(filled, min_area_mm2=15))))
+                color_plan.append((th, layers, "fill"))
+
+        elif a.style == "hasura":
+            # gravura minimala: linii paralele la 45 de grade, trei
+            # densitati dupa intuneric — acelasi fir, un singur bloc
+            hh, ww = gray.shape
+            my, mx = int(hh * 0.08), int(ww * 0.08)
+            core = gray[my:hh - my, mx:ww - mx]
+            base = fill_holes(subject_mask(img, gray))
+            for q, sp in ((0.62, 3.2), (0.42, 1.8), (0.22, 1.0)):
+                t = float(np.quantile(core, q))
+                m = ((gray < t).astype(np.uint8)) & base
+                m = cv2.morphologyEx(m, cv2.MORPH_OPEN, k3)
+                m = drop_small_islands(m, 12.0)
+                if not m.any():
+                    continue
+                color_plan.append((dark, [order_paths(split_long(fill_mask(
+                    m, 45, sp, a.stitch, tatami=False)))], "line"))
+
+        else:                            # amprenta: contururi concentrice
+            filled = fill_holes(subject_mask(img, gray))
+            if filled.any():
+                pas = int(PX(2.4)) | 1
+                kk = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (pas, pas))
+                rings, level = [], filled.copy()
+                for _ in range(200):
+                    if not level.any():
+                        break
+                    rings += outline_mask(level, min_area_mm2=8)
+                    level = cv2.erode(level, kk)
+                sk = order_paths(split_long(rings))
+                sk = [np.vstack([p, p[::-1]]) for p in sk]
+                color_plan.append((dark, [sk], "line"))
         order = []
 
     for i in order:
